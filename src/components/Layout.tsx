@@ -16,11 +16,12 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const isHome = location.pathname === "/home";
 
   return (
     <div className="min-h-screen relative">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3">
+      {/* Header - always above sidebar blur */}
+      <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3">
         <button
           onClick={() => setSidebarOpen(true)}
           className="glass-pill p-2.5 rounded-lg hover:border-primary/50 transition-colors"
@@ -28,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Menu className="w-5 h-5 text-foreground" />
         </button>
 
-        {/* Logo - center on mobile, left-offset on desktop */}
+        {/* Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 md:left-16 md:translate-x-0 flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center font-heading font-bold text-primary text-sm">
             S
@@ -57,7 +58,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-64 glass-card border-r border-border/50 p-6 flex flex-col"
+              className="fixed left-0 top-0 bottom-0 z-[55] w-64 glass-card border-r border-border/50 p-6 flex flex-col"
             >
               <div className="flex items-center justify-between mb-8">
                 <span className="font-heading font-bold text-primary text-lg">Portfolio</span>
@@ -105,6 +106,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Footer - only on home */}
+      {isHome && (
+        <footer className="text-center py-6 text-muted-foreground text-xs border-t border-border/30">
+          © 2026 Saisumanth @ ALL rights reserved
+        </footer>
+      )}
     </div>
   );
 }

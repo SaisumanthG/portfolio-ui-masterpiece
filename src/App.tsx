@@ -11,6 +11,7 @@ import Hackathons from "./pages/Hackathons";
 import Papers from "./pages/Papers";
 import Certificates from "./pages/Certificates";
 import Admin from "./pages/Admin";
+import DatabaseViewer from "./pages/DatabaseViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/papers" element={<Layout><Papers /></Layout>} />
           <Route path="/certificates" element={<Layout><Certificates /></Layout>} />
           <Route path="/web/admin" element={<Admin />} />
+          <Route path="/web/database" element={<DatabaseViewer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
