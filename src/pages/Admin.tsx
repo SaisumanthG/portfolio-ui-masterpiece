@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
-import { Upload } from "lucide-react";
+import { Upload, FileUp, X } from "lucide-react";
 
 const tables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 
@@ -86,11 +86,17 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleMultiFileUpload = (field: string, files: FileList) => {
+    // For single-value fields, use the first file
+    const file = files[0];
+    if (file) handleFileUpload(field, file);
+  };
+
   const handleDrop = (e: React.DragEvent, field: string) => {
     e.preventDefault();
     setDragOver(null);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(field, file);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) handleMultiFileUpload(field, files);
   };
 
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +118,68 @@ export default function AdminPage() {
   };
 
   const isFileField = (key: string) => ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].includes(key);
+
+  const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const zoneId = `${id}-${field}`;
+    
+    return (
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(zoneId); }}
+        onDragLeave={() => setDragOver(null)}
+        onDrop={(e) => handleDrop(e, field)}
+        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
+          dragOver === zoneId 
+            ? "border-primary bg-primary/10 scale-[1.01]" 
+            : "border-border/50 hover:border-primary/40"
+        }`}
+      >
+        <input 
+          ref={inputRef} 
+          type="file" 
+          accept="image/*,.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.txt" 
+          className="hidden" 
+          onChange={(e) => e.target.files && handleMultiFileUpload(field, e.target.files)} 
+        />
+        
+        {value && value.startsWith("data:") ? (
+          <div className="space-y-3">
+            {value.startsWith("data:image") ? (
+              <img src={value} alt="Preview" className="max-h-32 mx-auto rounded-lg border border-border/30" />
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-emerald-400">
+                <FileUp className="w-5 h-5" />
+                <span className="text-sm font-medium">File uploaded</span>
+              </div>
+            )}
+            <div className="flex justify-center gap-2">
+              <button onClick={() => inputRef.current?.click()} className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+                Replace
+              </button>
+              <button onClick={() => setEditData(prev => ({ ...prev, [field]: "" }))} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Upload className="w-8 h-8 mx-auto text-muted-foreground/50" />
+            <div>
+              <p className="text-sm text-muted-foreground">Drag & drop files here</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">or</p>
+            </div>
+            <button 
+              onClick={() => inputRef.current?.click()} 
+              className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              Browse Files
+            </button>
+            <p className="text-[10px] text-muted-foreground/40">Supports: JPG, PNG, GIF, WebP, PDF, DOC</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (!authenticated) {
     return (
@@ -172,20 +240,7 @@ export default function AdminPage() {
               <div key={key}>
                 <label className="text-xs text-muted-foreground block mb-1">{key}</label>
                 {isFileField(key) ? (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(`new-${key}`); }}
-                    onDragLeave={() => setDragOver(null)}
-                    onDrop={(e) => handleDrop(e, key)}
-                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragOver === `new-${key}` ? "border-primary bg-primary/10" : "border-border"}`}
-                  >
-                    <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground mb-2">Drag & drop or click to upload</p>
-                    <label className="px-3 py-1 rounded bg-primary/10 border border-primary/30 text-primary text-xs cursor-pointer hover:bg-primary/20">
-                      Choose File
-                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(key, e.target.files[0])} />
-                    </label>
-                    {val && <p className="text-xs text-emerald-400 mt-2">✓ File loaded</p>}
-                  </div>
+                  <FileUploadZone field={key} value={val} id="new" />
                 ) : (
                   <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
                 )}
@@ -208,20 +263,7 @@ export default function AdminPage() {
                     <div key={key}>
                       <label className="text-xs text-muted-foreground block mb-1">{key}</label>
                       {isFileField(key) ? (
-                        <div
-                          onDragOver={(e) => { e.preventDefault(); setDragOver(`${record.id}-${key}`); }}
-                          onDragLeave={() => setDragOver(null)}
-                          onDrop={(e) => handleDrop(e, key)}
-                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragOver === `${record.id}-${key}` ? "border-primary bg-primary/10" : "border-border"}`}
-                        >
-                          <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground mb-2">Drag & drop or click to upload</p>
-                          <label className="px-3 py-1 rounded bg-primary/10 border border-primary/30 text-primary text-xs cursor-pointer hover:bg-primary/20">
-                            Choose File
-                            <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(key, e.target.files[0])} />
-                          </label>
-                          {val && val.startsWith("data:") && <p className="text-xs text-emerald-400 mt-2">✓ File loaded</p>}
-                        </div>
+                        <FileUploadZone field={key} value={val} id={record.id} />
                       ) : (
                         <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
                       )}
