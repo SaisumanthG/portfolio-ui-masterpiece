@@ -21,20 +21,22 @@ export default function HackathonsPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="glass-card p-5 hover-glass"
+            className="glass-card p-5 hover-glass flex flex-col"
           >
-            <div className="image-placeholder w-full h-40 flex items-center justify-center mb-4">
+            <div className="w-full h-40 rounded-lg overflow-hidden mb-4 border border-border/20">
               {h.image ? (
-                <img src={h.image} alt={h.title} className="w-full h-full object-cover rounded-sm" />
+                <img src={h.image} alt={h.title} className="w-full h-full object-cover" />
               ) : (
-                <Trophy className="w-12 h-12 text-primary/30" />
+                <div className="w-full h-full image-placeholder flex items-center justify-center">
+                  <Trophy className="w-12 h-12 text-primary/30" />
+                </div>
               )}
             </div>
 
             <h3 className="font-heading font-bold text-foreground text-sm mb-2">{h.title}</h3>
-            <p className="text-muted-foreground text-xs leading-relaxed mb-4">{h.description}</p>
+            <p className="text-muted-foreground text-xs leading-relaxed mb-4 flex-1">{h.description}</p>
 
-            <a href="mailto:sumanthg.sai@gmail.com" className="inline-flex items-center gap-2 text-primary text-xs font-medium hover:underline">
+            <a href={h.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary text-xs font-medium hover:underline">
               <Github className="w-3.5 h-3.5" />
               View on GitHub
             </a>
