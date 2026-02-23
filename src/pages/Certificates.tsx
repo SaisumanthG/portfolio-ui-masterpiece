@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Award, ImageIcon, Calendar, ExternalLink } from "lucide-react";
+import { Award, ImageIcon, Calendar, Download, Share2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 
@@ -9,6 +9,16 @@ export default function CertificatesPage() {
   useEffect(() => {
     setCertificates(getAllRecords("certificates"));
   }, []);
+
+  const handleShare = async (cert: DBRecord) => {
+    const text = `${cert.title} - Issued by ${cert.issuer}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: cert.title, text, url: window.location.href }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard!");
+    }
+  };
 
   return (
     <div>
@@ -35,6 +45,16 @@ export default function CertificatesPage() {
                 )}
                 {/* Overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Action buttons on hover */}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button onClick={() => handleShare(cert)} className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
+                  <a href={cert.credlyUrl || "mailto:sumanthg.sai@gmail.com"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
 
               <div className="space-y-2">
