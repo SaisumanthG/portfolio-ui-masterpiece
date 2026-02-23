@@ -10,7 +10,6 @@ export default function ProjectsPage() {
     setProjects(getAllRecords("projects"));
   }, []);
 
-  // Alternate folder icon colors
   const folderColors = ["text-primary/70", "text-amber-500/70", "text-emerald-500/70", "text-rose-500/70", "text-cyan-500/70"];
 
   return (
@@ -30,11 +29,13 @@ export default function ProjectsPage() {
               <h3 className="font-heading font-semibold text-foreground text-sm">{project.title}</h3>
             </div>
 
-            <div className="image-placeholder w-full h-36 flex items-center justify-center mb-3">
+            <div className="w-full h-36 rounded-lg overflow-hidden mb-3 border border-border/20">
               {project.image ? (
-                <img src={project.image} alt={project.title} className="w-full h-full object-cover rounded-sm" />
+                <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
               ) : (
-                <Code2 className="w-10 h-10 text-muted-foreground/30" />
+                <div className="w-full h-full image-placeholder flex items-center justify-center">
+                  <Code2 className="w-10 h-10 text-muted-foreground/30" />
+                </div>
               )}
             </div>
 
@@ -47,11 +48,11 @@ export default function ProjectsPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <a href="mailto:sumanthg.sai@gmail.com" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+              <a href={project.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
                 <ExternalLink className="w-3.5 h-3.5" />
                 View Project
               </a>
-              <a href="mailto:sumanthg.sai@gmail.com" className="glass-pill p-2.5 rounded-lg hover:border-primary/50 transition-colors flex items-center justify-center">
+              <a href={project.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="glass-pill p-2.5 rounded-lg hover:border-primary/50 transition-colors flex items-center justify-center">
                 <Github className="w-4 h-4 text-muted-foreground" />
               </a>
             </div>

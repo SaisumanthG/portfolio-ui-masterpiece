@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { User, Download } from "lucide-react";
-import { useState, useEffect } from "react";
+import { User, Download, Github, Code2, Trophy } from "lucide-react";
+import { useState } from "react";
 import { getAllRecords } from "@/lib/database";
 
 const skills = {
@@ -9,6 +9,12 @@ const skills = {
   "Database": ["MySQL"],
   "Tools & Platforms": ["GitHub", "VS Code", "Figma", "Canva", "MySQL"],
 };
+
+const socialLinks = [
+  { label: "GitHub", icon: Github, href: "https://github.com/saisumanth-g", color: "hover:text-foreground" },
+  { label: "LeetCode", icon: Code2, href: "https://leetcode.com/u/saisumanth-g", color: "hover:text-amber-400" },
+  { label: "HackerRank", icon: Trophy, href: "https://www.hackerrank.com/profile/saisumanth_g", color: "hover:text-emerald-400" },
+];
 
 const yearData: Record<string, { title: string; description: string; image: string }[]> = {
   "1st Year": [
@@ -82,9 +88,7 @@ export default function HomePage() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="relative w-40 h-40 md:w-48 md:h-48 rounded-full border-2 border-foreground/20 flex items-center justify-center mb-6 glow-blue"
-          style={{
-            background: "radial-gradient(circle, hsl(230, 50%, 18%) 0%, hsl(225, 45%, 10%) 70%)",
-          }}
+          style={{ background: "radial-gradient(circle, hsl(230, 50%, 18%) 0%, hsl(225, 45%, 10%) 70%)" }}
         >
           <User className="w-16 h-16 text-muted-foreground/50" />
         </motion.div>
@@ -119,12 +123,7 @@ export default function HomePage() {
         <h2 className="page-title mb-6">Skills</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(skills).map(([category, items]) => (
-            <motion.div
-              key={category}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-5"
-            >
+            <motion.div key={category} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
               <h3 className="font-heading font-semibold text-primary text-sm mb-3">{category}</h3>
               <div className="flex flex-wrap gap-2">
                 {items.map((skill) => (
@@ -132,6 +131,25 @@ export default function HomePage() {
                 ))}
               </div>
             </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social / Coding Profiles */}
+      <section>
+        <h2 className="page-title mb-6">Profiles</h2>
+        <div className="flex flex-wrap gap-4">
+          {socialLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`glass-card px-6 py-4 rounded-xl flex items-center gap-3 text-muted-foreground ${link.color} transition-all hover:border-primary/40 hover:shadow-[0_0_15px_hsl(var(--primary)/0.1)]`}
+            >
+              <link.icon className="w-5 h-5" />
+              <span className="font-heading font-medium text-sm">{link.label}</span>
+            </a>
           ))}
         </div>
       </section>
@@ -149,7 +167,6 @@ export default function HomePage() {
         <div className="rounded-lg border border-border/40 p-1 bg-secondary/10">
           <div className="glass-card p-4">
             <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
-              {/* Left - College info + year buttons */}
               <div className="space-y-4">
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
@@ -176,7 +193,6 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {/* Right - Content */}
               <div className="space-y-4">
                 <motion.div
                   key={`img-${selectedYear}-${yearContentIndex}`}
@@ -187,9 +203,7 @@ export default function HomePage() {
                   {currentYearItems[yearContentIndex].image ? (
                     <img src={currentYearItems[yearContentIndex].image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-muted-foreground/40 text-sm">
-                      {selectedYear} - Slide {yearContentIndex + 1}
-                    </span>
+                    <span className="text-muted-foreground/40 text-sm">{selectedYear} - Slide {yearContentIndex + 1}</span>
                   )}
                 </motion.div>
 
@@ -199,27 +213,12 @@ export default function HomePage() {
                   animate={{ opacity: 1, x: 0 }}
                   className="glass-card p-6 text-center border-t-2 border-primary/50"
                 >
-                  <h3 className="font-heading font-bold text-foreground italic text-lg mb-1">
-                    {currentYearItems[yearContentIndex].title}
-                  </h3>
+                  <h3 className="font-heading font-bold text-foreground italic text-lg mb-1">{currentYearItems[yearContentIndex].title}</h3>
                   <p className="text-primary text-xs font-heading mb-3">— {selectedYear} —</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {currentYearItems[yearContentIndex].description}
-                  </p>
-
+                  <p className="text-muted-foreground text-sm leading-relaxed">{currentYearItems[yearContentIndex].description}</p>
                   <div className="flex justify-center gap-3 mt-5">
-                    <button
-                      onClick={() => navigateContent(-1)}
-                      className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={() => navigateContent(1)}
-                      className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors"
-                    >
-                      ›
-                    </button>
+                    <button onClick={() => navigateContent(-1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">‹</button>
+                    <button onClick={() => navigateContent(1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">›</button>
                   </div>
                 </motion.div>
               </div>
@@ -227,6 +226,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="text-center py-6 text-muted-foreground text-xs border-t border-border/30">
+        © 2026 Saisumanth @ ALL rights reserved
+      </footer>
     </div>
   );
 }

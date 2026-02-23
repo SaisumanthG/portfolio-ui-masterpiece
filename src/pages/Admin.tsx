@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
+import { Upload } from "lucide-react";
 
 const tables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 
@@ -13,6 +14,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, string>>({});
   const [newRecord, setNewRecord] = useState(false);
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
   const refresh = () => setRecords(getAllRecords(activeTable));
 
@@ -76,6 +78,21 @@ export default function AdminPage() {
     }
   };
 
+  const handleFileUpload = (field: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setEditData((prev) => ({ ...prev, [field]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent, field: string) => {
+    e.preventDefault();
+    setDragOver(null);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(field, file);
+  };
+
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -93,6 +110,8 @@ export default function AdminPage() {
     };
     reader.readAsDataURL(file);
   };
+
+  const isFileField = (key: string) => ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].includes(key);
 
   if (!authenticated) {
     return (
@@ -143,7 +162,6 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Add button */}
         <button onClick={startAdd} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 
         {/* New record form */}
@@ -153,7 +171,24 @@ export default function AdminPage() {
             {Object.entries(editData).map(([key, val]) => (
               <div key={key}>
                 <label className="text-xs text-muted-foreground block mb-1">{key}</label>
-                <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
+                {isFileField(key) ? (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(`new-${key}`); }}
+                    onDragLeave={() => setDragOver(null)}
+                    onDrop={(e) => handleDrop(e, key)}
+                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragOver === `new-${key}` ? "border-primary bg-primary/10" : "border-border"}`}
+                  >
+                    <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground mb-2">Drag & drop or click to upload</p>
+                    <label className="px-3 py-1 rounded bg-primary/10 border border-primary/30 text-primary text-xs cursor-pointer hover:bg-primary/20">
+                      Choose File
+                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(key, e.target.files[0])} />
+                    </label>
+                    {val && <p className="text-xs text-emerald-400 mt-2">✓ File loaded</p>}
+                  </div>
+                ) : (
+                  <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
+                )}
               </div>
             ))}
             <div className="flex gap-2">
@@ -172,7 +207,24 @@ export default function AdminPage() {
                   {Object.entries(editData).filter(([k]) => k !== "id").map(([key, val]) => (
                     <div key={key}>
                       <label className="text-xs text-muted-foreground block mb-1">{key}</label>
-                      <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
+                      {isFileField(key) ? (
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); setDragOver(`${record.id}-${key}`); }}
+                          onDragLeave={() => setDragOver(null)}
+                          onDrop={(e) => handleDrop(e, key)}
+                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragOver === `${record.id}-${key}` ? "border-primary bg-primary/10" : "border-border"}`}
+                        >
+                          <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground mb-2">Drag & drop or click to upload</p>
+                          <label className="px-3 py-1 rounded bg-primary/10 border border-primary/30 text-primary text-xs cursor-pointer hover:bg-primary/20">
+                            Choose File
+                            <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(key, e.target.files[0])} />
+                          </label>
+                          {val && val.startsWith("data:") && <p className="text-xs text-emerald-400 mt-2">✓ File loaded</p>}
+                        </div>
+                      ) : (
+                        <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
+                      )}
                     </div>
                   ))}
                   <div className="flex gap-2 pt-2">
@@ -184,7 +236,12 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1 flex-1">
                     {Object.entries(record).filter(([k]) => k !== "id").map(([key, val]) => (
-                      <p key={key} className="text-xs"><span className="text-primary font-medium">{key}:</span> <span className="text-foreground/80">{typeof val === "object" ? JSON.stringify(val) : String(val || "—")}</span></p>
+                      <p key={key} className="text-xs">
+                        <span className="text-primary font-medium">{key}:</span>{" "}
+                        <span className="text-foreground/80">
+                          {typeof val === "string" && val.startsWith("data:") ? "📎 File uploaded" : typeof val === "object" ? JSON.stringify(val) : String(val || "—")}
+                        </span>
+                      </p>
                     ))}
                   </div>
                   <div className="flex gap-2 ml-4">

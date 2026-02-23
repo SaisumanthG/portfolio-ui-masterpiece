@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Award, ImageIcon, Calendar } from "lucide-react";
+import { Award, ImageIcon, Calendar, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 
@@ -21,23 +21,34 @@ export default function CertificatesPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="hover-glass rounded-lg border border-border/40 p-1 bg-secondary/10"
+            className="group hover-glass rounded-xl border border-primary/20 bg-gradient-to-br from-secondary/30 to-secondary/10 p-1 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
           >
-            <div className="glass-card p-5">
+            <div className="glass-card p-5 rounded-lg h-full">
               {/* Certificate image */}
-              <div className="image-placeholder w-full h-48 md:h-56 flex items-center justify-center mb-4">
+              <div className="relative w-full h-48 md:h-56 rounded-lg overflow-hidden mb-4 border border-border/20">
                 {cert.image ? (
-                  <img src={cert.image} alt={cert.title} className="w-full h-full object-cover rounded-sm" />
+                  <img src={cert.image} alt={cert.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 ) : (
-                  <ImageIcon className="w-12 h-12 text-primary/30" />
+                  <div className="w-full h-full image-placeholder flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-primary/20" />
+                  </div>
                 )}
+                {/* Overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
-              <h3 className="font-heading font-bold text-foreground text-sm mb-1">{cert.title}</h3>
-              <p className="text-primary text-xs mb-1">{cert.issuer}</p>
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-muted-foreground" />
-                <span className="text-muted-foreground text-xs">Valid: {cert.valid || "2024–2027"}</span>
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-heading font-bold text-foreground text-sm mb-1 group-hover:text-primary transition-colors">{cert.title}</h3>
+                    <p className="text-primary text-xs font-medium">{cert.issuer}</p>
+                  </div>
+                  <Award className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
+                </div>
+                <div className="flex items-center gap-1.5 pt-1">
+                  <Calendar className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground text-xs">Valid: {cert.valid || "2024–2027"}</span>
+                </div>
               </div>
             </div>
           </motion.div>
