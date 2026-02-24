@@ -3,6 +3,14 @@ import { FolderOpen, ExternalLink, Github, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 
+const cardVariant = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0, scale: 1,
+    transition: { delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<DBRecord[]>([]);
 
@@ -14,14 +22,24 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <h1 className="page-title text-center mb-8">Projects</h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="page-title text-center mb-8"
+      >
+        Projects
+      </motion.h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {projects.map((project, i) => (
           <motion.div
             key={project.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            custom={i}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            variants={cardVariant}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="glass-card p-5 hover-glass"
           >
             <div className="flex items-center gap-2 mb-3">
@@ -31,7 +49,7 @@ export default function ProjectsPage() {
 
             <div className="w-full h-36 rounded-lg overflow-hidden mb-3 border border-border/20">
               {project.image ? (
-                <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
+                <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
               ) : (
                 <div className="w-full h-full image-placeholder flex items-center justify-center">
                   <Code2 className="w-10 h-10 text-muted-foreground/30" />

@@ -1,7 +1,15 @@
 import { motion } from "framer-motion";
-import { Award, ImageIcon, Calendar, Download, Share2, ExternalLink } from "lucide-react";
+import { Award, ImageIcon, Calendar, Share2, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0, scale: 1,
+    transition: { delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
 
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<DBRecord[]>([]);
@@ -13,7 +21,7 @@ export default function CertificatesPage() {
   const handleShare = async (cert: DBRecord) => {
     const text = `${cert.title} - Issued by ${cert.issuer}`;
     if (navigator.share) {
-      try { await navigator.share({ title: cert.title, text, url: window.location.href }); } catch {}
+      try { await navigator.share({ title: cert.title as string, text, url: window.location.href }); } catch {}
     } else {
       await navigator.clipboard.writeText(text);
       alert("Copied to clipboard!");
@@ -22,38 +30,45 @@ export default function CertificatesPage() {
 
   return (
     <div>
-      <h1 className="page-title mb-8">Certifications</h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="page-title mb-8"
+      >
+        Certifications
+      </motion.h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {certificates.map((cert, i) => (
           <motion.div
             key={cert.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            custom={i}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            variants={cardVariant}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="group hover-glass rounded-xl border border-primary/20 bg-gradient-to-br from-secondary/30 to-secondary/10 p-1 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
           >
             <div className="glass-card p-5 rounded-lg h-full">
-              {/* Certificate image */}
               <div className="relative w-full h-48 md:h-56 rounded-lg overflow-hidden mb-4 border border-border/20">
                 {cert.image ? (
-                  <img src={cert.image} alt={cert.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src={cert.image} alt={cert.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full image-placeholder flex items-center justify-center">
                     <ImageIcon className="w-12 h-12 text-primary/20" />
                   </div>
                 )}
-                {/* Overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                {/* Action buttons on hover */}
                 <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <button onClick={() => handleShare(cert)} className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleShare(cert)} className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
                     <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                  <a href={cert.credlyUrl || "mailto:sumanthg.sai@gmail.com"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                  </motion.button>
+                  <motion.a whileHover={{ scale: 1.1 }} href={cert.credlyUrl || "mailto:sumanthg.sai@gmail.com"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
                     <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                  </motion.a>
                 </div>
               </div>
 
