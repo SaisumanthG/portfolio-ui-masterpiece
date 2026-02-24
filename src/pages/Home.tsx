@@ -14,7 +14,7 @@ const scaleIn = {
 };
 
 export default function HomePage() {
-  const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "" });
+  const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "" });
   const [aboutText, setAboutText] = useState("");
   const [skills, setSkills] = useState<{ category: string; items: string[] }[]>([]);
   const [links, setLinks] = useState<{ label: string; url: string; icon: string }[]>([]);
@@ -25,7 +25,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const profileRecs = getAllRecords("homeProfile");
-    if (profileRecs.length > 0) setProfile({ name: profileRecs[0].name || "Sai Sumanth G", subtitle: profileRecs[0].subtitle || "", image: profileRecs[0].image || "" });
+    if (profileRecs.length > 0) setProfile({ name: profileRecs[0].name || "Sai Sumanth G", subtitle: profileRecs[0].subtitle || "", image: profileRecs[0].image || "", collegeImage: profileRecs[0].collegeImage || "" });
     const aboutRecs = getAllRecords("homeAbout");
     if (aboutRecs.length > 0) setAboutText(aboutRecs[0].content || "");
     const skillRecs = getAllRecords("homeSkills");
@@ -192,8 +192,12 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
               <div className="space-y-4">
                 <div className="glass-card p-6 text-center">
-                  <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
-                    <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
+                  <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
+                    {profile.collegeImage ? (
+                      <img src={profile.collegeImage} alt="College" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
+                    )}
                   </div>
                   <h3 className="font-heading font-bold text-foreground text-sm">PANIMALAR</h3>
                   <p className="text-primary text-xs font-heading">ENGINEERING COLLEGE</p>

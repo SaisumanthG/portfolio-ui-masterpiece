@@ -337,9 +337,9 @@ export default function AdminPage() {
               return (
                 <div key={table} className="glass-card overflow-hidden">
                   {/* Section header */}
-                  <button
+                  <div
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-primary/5 transition-colors cursor-pointer"
                     onClick={() => toggleSection(table)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-primary/5 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {isExpanded ? <ChevronDown className="w-4 h-4 text-primary" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
@@ -352,7 +352,7 @@ export default function AdminPage() {
                     >
                       + Add
                     </button>
-                  </button>
+                  </div>
 
                   {/* Section content */}
                   {isExpanded && (
