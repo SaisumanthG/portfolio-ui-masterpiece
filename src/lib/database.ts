@@ -31,7 +31,15 @@ function generateId(): string {
 
 function getDB(): Database {
   const raw = localStorage.getItem(DB_KEY);
-  if (raw) return JSON.parse(raw);
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    const defaults = getDefaultData();
+    // Ensure all tables exist (handles old DBs missing new tables)
+    for (const key of Object.keys(defaults) as (keyof Database)[]) {
+      if (!parsed[key]) parsed[key] = defaults[key];
+    }
+    return parsed;
+  }
   const seed = getDefaultData();
   localStorage.setItem(DB_KEY, JSON.stringify(seed));
   return seed;
@@ -137,7 +145,7 @@ function getDefaultData(): Database {
       { id: "s1", key: "resumePdf", value: "" },
     ],
     homeProfile: [
-      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "" },
+      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "" },
     ],
     homeAbout: [
       { id: "ha1", content: "A passionate developer with a love for building innovative solutions. Experienced in Full Stack Development, Machine Learning, and Cloud technologies. Exploring the intersection of design and technology to create impactful products. Currently seeking opportunities to make a meaningful contribution in the tech industry." },
