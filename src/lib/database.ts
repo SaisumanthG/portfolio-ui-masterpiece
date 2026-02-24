@@ -34,10 +34,15 @@ function getDB(): Database {
   if (raw) {
     const parsed = JSON.parse(raw);
     const defaults = getDefaultData();
+    let needsSave = false;
     // Ensure all tables exist (handles old DBs missing new tables)
     for (const key of Object.keys(defaults) as (keyof Database)[]) {
-      if (!parsed[key]) parsed[key] = defaults[key];
+      if (!parsed[key]) {
+        parsed[key] = defaults[key];
+        needsSave = true;
+      }
     }
+    if (needsSave) localStorage.setItem(DB_KEY, JSON.stringify(parsed));
     return parsed;
   }
   const seed = getDefaultData();
