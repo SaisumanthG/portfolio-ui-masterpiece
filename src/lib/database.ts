@@ -16,6 +16,11 @@ export interface Database {
   papers: DBRecord[];
   certificates: DBRecord[];
   settings: DBRecord[];
+  homeProfile: DBRecord[];
+  homeAbout: DBRecord[];
+  homeSkills: DBRecord[];
+  homeLinks: DBRecord[];
+  homeCollege: DBRecord[];
 }
 
 const DB_KEY = "portfolio_db";
@@ -130,6 +135,45 @@ function getDefaultData(): Database {
     ],
     settings: [
       { id: "s1", key: "resumePdf", value: "" },
+    ],
+    homeProfile: [
+      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "" },
+    ],
+    homeAbout: [
+      { id: "ha1", content: "A passionate developer with a love for building innovative solutions. Experienced in Full Stack Development, Machine Learning, and Cloud technologies. Exploring the intersection of design and technology to create impactful products. Currently seeking opportunities to make a meaningful contribution in the tech industry." },
+    ],
+    homeSkills: [
+      { id: "hs1", category: "Languages", skills: '["C","C++","Java (Intermediate)","Python (Intermediate)"]' },
+      { id: "hs2", category: "Web Development", skills: '["HTML","CSS","JavaScript","Django"]' },
+      { id: "hs3", category: "Database", skills: '["MySQL"]' },
+      { id: "hs4", category: "Tools & Platforms", skills: '["GitHub","VS Code","Figma","Canva","MySQL"]' },
+    ],
+    homeLinks: [
+      { id: "hl1", label: "GitHub", url: "https://github.com/saisumanth-g", icon: "github" },
+      { id: "hl2", label: "LeetCode", url: "https://leetcode.com/u/saisumanth-g", icon: "leetcode" },
+      { id: "hl3", label: "HackerRank", url: "https://www.hackerrank.com/profile/saisumanth_g", icon: "hackerrank" },
+    ],
+    homeCollege: [
+      { id: "hc1", year: "1st Year", slideIndex: "0", title: "First Workshop", description: "Attended a hands-on workshop on Arduino and basic electronics, marking my first step into hardware.", image: "" },
+      { id: "hc2", year: "1st Year", slideIndex: "1", title: "Intro to Programming", description: "Started learning C and Python fundamentals through college coursework.", image: "" },
+      { id: "hc3", year: "1st Year", slideIndex: "2", title: "College Orientation", description: "Explored various departments and clubs during the first semester.", image: "" },
+      { id: "hc4", year: "1st Year", slideIndex: "3", title: "Tech Fest", description: "Participated in first college tech fest and coding competition.", image: "" },
+      { id: "hc5", year: "1st Year", slideIndex: "4", title: "Project Expo", description: "Presented a basic calculator app built with Python.", image: "" },
+      { id: "hc6", year: "2nd Year", slideIndex: "0", title: "Web Development Bootcamp", description: "Built first web projects using HTML, CSS, and JavaScript.", image: "" },
+      { id: "hc7", year: "2nd Year", slideIndex: "1", title: "Hackathon Debut", description: "Participated in first hackathon, building a prototype in 24 hours.", image: "" },
+      { id: "hc8", year: "2nd Year", slideIndex: "2", title: "Database Course", description: "Learned MySQL and relational database design.", image: "" },
+      { id: "hc9", year: "2nd Year", slideIndex: "3", title: "GitHub Journey", description: "Started using Git and GitHub for version control.", image: "" },
+      { id: "hc10", year: "2nd Year", slideIndex: "4", title: "Mini Project", description: "Developed a student management system using Django.", image: "" },
+      { id: "hc11", year: "3rd Year", slideIndex: "0", title: "AI/ML Exploration", description: "Explored machine learning concepts and built a disease detection model.", image: "" },
+      { id: "hc12", year: "3rd Year", slideIndex: "1", title: "Internship at Altruisty", description: "Full Stack Development intern working on Django applications.", image: "" },
+      { id: "hc13", year: "3rd Year", slideIndex: "2", title: "Paper Publication", description: "Started research on ESP32-based smart monitoring systems.", image: "" },
+      { id: "hc14", year: "3rd Year", slideIndex: "3", title: "IDEATHON", description: "Won recognition at PECTEAM 2K24 ideation competition.", image: "" },
+      { id: "hc15", year: "3rd Year", slideIndex: "4", title: "Cloud Certification", description: "Completed AWS Cloud Practitioner and Oracle certifications.", image: "" },
+      { id: "hc16", year: "4th Year", slideIndex: "0", title: "Conference Paper", description: "Published research on ESP32-based smart air quality monitoring system.", image: "" },
+      { id: "hc17", year: "4th Year", slideIndex: "1", title: "Capstone Project", description: "Developed Start or Scrap startup validation game as final year project.", image: "" },
+      { id: "hc18", year: "4th Year", slideIndex: "2", title: "AI Internship", description: "Worked on AI-based interior design generator using Stable Diffusion.", image: "" },
+      { id: "hc19", year: "4th Year", slideIndex: "3", title: "Portfolio Website", description: "Built this personal portfolio to showcase all projects and achievements.", image: "" },
+      { id: "hc20", year: "4th Year", slideIndex: "4", title: "Placement Prep", description: "Preparing for campus placements and industry roles.", image: "" },
     ],
   };
 }
