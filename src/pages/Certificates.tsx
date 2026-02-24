@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Award, ImageIcon, Calendar, Share2, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
+import { toast } from "sonner";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
@@ -19,12 +20,41 @@ export default function CertificatesPage() {
   }, []);
 
   const handleShare = async (cert: DBRecord) => {
-    const text = `${cert.title} - Issued by ${cert.issuer}`;
+    const shareData: ShareData = {
+      title: cert.title as string,
+      text: `${cert.title} - Issued by ${cert.issuer}`,
+      url: window.location.href,
+    };
+
     if (navigator.share) {
-      try { await navigator.share({ title: cert.title as string, text, url: window.location.href }); } catch {}
+      try {
+        // Try sharing with image file if available
+        if (cert.image && (cert.image as string).startsWith("data:")) {
+          try {
+            const parts = (cert.image as string).split(",");
+            const mime = parts[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+            const byteString = atob(parts[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+            const blob = new Blob([ab], { type: mime });
+            const ext = mime.split("/")[1] || "jpg";
+            const file = new File([blob], `${cert.title}.${ext}`, { type: mime });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ ...shareData, files: [file] });
+              return;
+            }
+          } catch { /* fall through */ }
+        }
+        await navigator.share(shareData);
+      } catch { /* cancelled */ }
     } else {
-      await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(`${cert.title} - Issued by ${cert.issuer}\n${window.location.href}`);
+        toast.success("Link copied to clipboard!");
+      } catch {
+        toast.error("Could not share");
+      }
     }
   };
 
@@ -54,7 +84,7 @@ export default function CertificatesPage() {
             <div className="glass-card p-5 rounded-lg h-full">
               <div className="relative w-full h-48 md:h-56 rounded-lg overflow-hidden mb-4 border border-border/20">
                 {cert.image ? (
-                  <img src={cert.image} alt={cert.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={cert.image} alt={cert.title} className="w-full h-full object-contain bg-secondary/30 transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full image-placeholder flex items-center justify-center">
                     <ImageIcon className="w-12 h-12 text-primary/20" />

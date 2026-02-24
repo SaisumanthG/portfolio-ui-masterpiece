@@ -98,7 +98,7 @@ export default function HomePage() {
           style={{ background: "radial-gradient(circle, hsl(230, 50%, 18%) 0%, hsl(225, 45%, 10%) 70%)" }}
         >
           {profile.image ? (
-            <img src={profile.image} alt={profile.name} className="w-full h-full object-cover" />
+            <img src={profile.image} alt={profile.name} className="w-full h-full object-cover" draggable={false} />
           ) : (
             <User className="w-16 h-16 text-muted-foreground/50" />
           )}
