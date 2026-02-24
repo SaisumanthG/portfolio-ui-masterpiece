@@ -3,6 +3,16 @@ import { User, Download, Github, Code2, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllRecords } from "@/lib/database";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }),
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
 export default function HomePage() {
   const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "" });
   const [aboutText, setAboutText] = useState("");
@@ -15,33 +25,23 @@ export default function HomePage() {
 
   useEffect(() => {
     const profileRecs = getAllRecords("homeProfile");
-    if (profileRecs.length > 0) {
-      setProfile({ name: profileRecs[0].name || "Sai Sumanth G", subtitle: profileRecs[0].subtitle || "", image: profileRecs[0].image || "" });
-    }
+    if (profileRecs.length > 0) setProfile({ name: profileRecs[0].name || "Sai Sumanth G", subtitle: profileRecs[0].subtitle || "", image: profileRecs[0].image || "" });
     const aboutRecs = getAllRecords("homeAbout");
     if (aboutRecs.length > 0) setAboutText(aboutRecs[0].content || "");
-
     const skillRecs = getAllRecords("homeSkills");
     setSkills(skillRecs.map(s => {
       let items: string[] = [];
       try { items = JSON.parse(s.skills); } catch { items = [s.skills]; }
       return { category: s.category, items };
     }));
-
     const linkRecs = getAllRecords("homeLinks");
     setLinks(linkRecs.map(l => ({ label: l.label, url: l.url, icon: l.icon })));
-
     const collegeRecs = getAllRecords("homeCollege");
     setCollegeSlides(collegeRecs.map(c => ({ year: c.year, title: c.title, description: c.description, image: c.image || "" })));
   }, []);
 
   const currentYearItems = collegeSlides.filter(s => s.year === selectedYear);
-
-  const handleYearChange = (year: string) => {
-    setSelectedYear(year);
-    setYearContentIndex(0);
-  };
-
+  const handleYearChange = (year: string) => { setSelectedYear(year); setYearContentIndex(0); };
   const navigateContent = (dir: number) => {
     setYearContentIndex((prev) => {
       const next = prev + dir;
@@ -87,10 +87,13 @@ export default function HomePage() {
   return (
     <div className="space-y-12">
       {/* Hero */}
-      <section className="flex flex-col items-center text-center py-8">
+      <motion.section
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col items-center text-center py-8"
+      >
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          variants={scaleIn}
           className="relative w-40 h-40 md:w-48 md:h-48 rounded-full border-2 border-foreground/20 flex items-center justify-center mb-6 glow-blue overflow-hidden"
           style={{ background: "radial-gradient(circle, hsl(230, 50%, 18%) 0%, hsl(225, 45%, 10%) 70%)" }}
         >
@@ -101,30 +104,31 @@ export default function HomePage() {
           )}
         </motion.div>
         <motion.h1
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          variants={fadeUp}
+          custom={1}
           className="text-4xl md:text-5xl font-heading font-bold text-primary glow-text mb-2"
         >
           {profile.name}
         </motion.h1>
-        <p className="text-muted-foreground text-lg">{profile.subtitle}</p>
-      </section>
+        <motion.p variants={fadeUp} custom={2} className="text-muted-foreground text-lg">
+          {profile.subtitle}
+        </motion.p>
+      </motion.section>
 
       {/* About */}
-      <section>
-        <div className="glass-card p-6 md:p-8">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
+        <motion.div variants={fadeUp} custom={0} className="glass-card p-6 md:p-8">
           <h2 className="font-heading font-semibold text-lg text-foreground mb-3">About Me</h2>
           <p className="text-muted-foreground leading-relaxed">{aboutText}</p>
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
       {/* Skills */}
-      <section>
-        <h2 className="page-title mb-6">Skills</h2>
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
+        <motion.h2 variants={fadeUp} custom={0} className="page-title mb-6">Skills</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {skills.map((s) => (
-            <motion.div key={s.category} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
+          {skills.map((s, i) => (
+            <motion.div key={s.category} variants={fadeUp} custom={i + 1} className="glass-card p-5">
               <h3 className="font-heading font-semibold text-primary text-sm mb-3">{s.category}</h3>
               <div className="flex flex-wrap gap-2">
                 {s.items.map((skill) => (
@@ -134,41 +138,56 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Profiles */}
-      <section>
-        <h2 className="page-title mb-6">Profiles</h2>
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
+        <motion.h2 variants={fadeUp} custom={0} className="page-title mb-6">Profiles</motion.h2>
         <div className="flex flex-wrap gap-4">
-          {links.map((link) => {
+          {links.map((link, i) => {
             const Icon = getIcon(link.icon);
             return (
-              <a
+              <motion.a
                 key={link.label}
+                variants={fadeUp}
+                custom={i + 1}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`glass-card px-6 py-4 rounded-xl flex items-center gap-3 text-muted-foreground ${getColor(link.icon)} transition-all hover:border-primary/40 hover:shadow-[0_0_15px_hsl(var(--primary)/0.1)]`}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Icon className="w-5 h-5" />
                 <span className="font-heading font-medium text-sm">{link.label}</span>
-              </a>
+              </motion.a>
             );
           })}
         </div>
-      </section>
+      </motion.section>
 
       {/* Resume */}
-      <section className="flex justify-center">
-        <button onClick={handleDownloadResume} className="glass-pill flex items-center gap-2 px-6 py-3 rounded-full text-primary font-medium hover:bg-primary/10 transition-colors border-primary/30">
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        className="flex justify-center"
+      >
+        <motion.button
+          variants={scaleIn}
+          onClick={handleDownloadResume}
+          className="glass-pill flex items-center gap-2 px-6 py-3 rounded-full text-primary font-medium hover:bg-primary/10 transition-colors border-primary/30"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           <Download className="w-4 h-4" />
           Download Resume
-        </button>
-      </section>
+        </motion.button>
+      </motion.section>
 
       {/* College Section */}
-      <section>
-        <div className="rounded-lg border border-border/40 p-1 bg-secondary/10">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
+        <motion.div variants={fadeUp} custom={0} className="rounded-lg border border-border/40 p-1 bg-secondary/10">
           <div className="glass-card p-4">
             <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
               <div className="space-y-4">
@@ -202,8 +221,9 @@ export default function HomePage() {
                   <>
                     <motion.div
                       key={`img-${selectedYear}-${yearContentIndex}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4 }}
                       className="image-placeholder w-full h-48 md:h-64 rounded-lg flex items-center justify-center overflow-hidden"
                     >
                       {currentSlide.image ? (
@@ -217,14 +237,15 @@ export default function HomePage() {
                       key={`${selectedYear}-${yearContentIndex}`}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                       className="glass-card p-6 text-center border-t-2 border-primary/50"
                     >
                       <h3 className="font-heading font-bold text-foreground italic text-lg mb-1">{currentSlide.title}</h3>
                       <p className="text-primary text-xs font-heading mb-3">— {selectedYear} —</p>
                       <p className="text-muted-foreground text-sm leading-relaxed">{currentSlide.description}</p>
                       <div className="flex justify-center gap-3 mt-5">
-                        <button onClick={() => navigateContent(-1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">‹</button>
-                        <button onClick={() => navigateContent(1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">›</button>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigateContent(-1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">‹</motion.button>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigateContent(1)} className="glass-pill w-10 h-10 rounded-lg flex items-center justify-center text-foreground hover:border-primary/50 transition-colors">›</motion.button>
                       </div>
                     </motion.div>
                   </>
@@ -234,8 +255,8 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
       {/* Footer */}
       <footer className="text-center py-6 text-muted-foreground text-xs border-t border-border/30">

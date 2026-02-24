@@ -3,6 +3,14 @@ import { FileText, Download, Share2, Mail, ExternalLink, X } from "lucide-react"
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 
+const cardVariant = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0, scale: 1,
+    transition: { delay: i * 0.12, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
 export default function PapersPage() {
   const [papers, setPapers] = useState<DBRecord[]>([]);
   const [previewPaper, setPreviewPaper] = useState<DBRecord | null>(null);
@@ -46,15 +54,24 @@ export default function PapersPage() {
 
   return (
     <div>
-      <h1 className="page-title text-center mb-8">Conference Papers</h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="page-title text-center mb-8"
+      >
+        Conference Papers
+      </motion.h1>
 
       <div className="space-y-8">
         {papers.map((paper, i) => (
           <motion.div
             key={paper.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.15 }}
+            custom={i}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            variants={cardVariant}
             className="glass-card p-6 hover-glass"
           >
             {/* Document preview area */}

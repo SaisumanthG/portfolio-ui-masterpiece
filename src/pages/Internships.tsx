@@ -16,15 +16,27 @@ export default function InternshipsPage() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col">
-      <h1 className="page-title text-center mb-8">Internships</h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="page-title text-center mb-8"
+      >
+        Internships
+      </motion.h1>
 
       <div className="relative flex flex-1">
         {/* Left numbered nav */}
         <div className="flex flex-col gap-3 mr-4">
           {internships.map((_, i) => (
-            <button
+            <motion.button
               key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
               onClick={() => setActiveIndex(i)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               className={`w-10 h-10 rounded-full flex items-center justify-center font-heading font-bold text-sm transition-all ${
                 activeIndex === i
                   ? "bg-primary text-primary-foreground glow-blue"
@@ -32,21 +44,27 @@ export default function InternshipsPage() {
               }`}
             >
               {i + 1}
-            </button>
+            </motion.button>
           ))}
         </div>
 
-        {/* Content card - expanded */}
-        <div className="flex-1 rounded-lg border border-border/40 p-1 bg-secondary/20">
+        {/* Content card - full height */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex-1 rounded-lg border border-border/40 p-1 bg-secondary/20"
+        >
           <motion.div
             key={activeIndex}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="glass-card p-6 md:p-8 h-full"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
-              {/* Image first on top / left */}
-              <div className="w-full h-64 md:h-full min-h-[300px] rounded-lg overflow-hidden border border-border/30">
+              {/* Image - full height */}
+              <div className="w-full h-64 md:h-full min-h-[350px] rounded-lg overflow-hidden border border-border/30">
                 {current.image ? (
                   <img src={current.image} alt={current.company} className="w-full h-full object-cover" />
                 ) : (
@@ -56,7 +74,7 @@ export default function InternshipsPage() {
                 )}
               </div>
 
-              <div className="flex flex-col justify-between">
+              <div className="flex flex-col justify-between py-2">
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Building2 className="w-6 h-6 text-primary/70" />
@@ -68,19 +86,19 @@ export default function InternshipsPage() {
                 </div>
 
                 <div className="flex gap-3 mt-8">
-                  <a href={current.website || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-colors">
+                  <motion.a whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} href={current.website || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-colors">
                     <ExternalLink className="w-4 h-4" />
                     Website
-                  </a>
-                  <a href={current.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-lg glass-pill text-foreground text-sm font-medium hover:border-primary/50 transition-colors">
+                  </motion.a>
+                  <motion.a whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} href={current.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-lg glass-pill text-foreground text-sm font-medium hover:border-primary/50 transition-colors">
                     <Github className="w-4 h-4" />
                     GitHub
-                  </a>
+                  </motion.a>
                 </div>
               </div>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
