@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
 import { Upload, FileUp, X } from "lucide-react";
 
-const tables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
+const tables: (keyof Database)[] = ["homeProfile", "homeAbout", "homeSkills", "homeLinks", "homeCollege", "projects", "internships", "hackathons", "papers", "certificates", "settings"];
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -117,7 +117,7 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
-  const isFileField = (key: string) => ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].includes(key);
+  const isFileField = (key: string) => ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].includes(key.toLowerCase());
 
   const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
     const inputRef = useRef<HTMLInputElement>(null);
