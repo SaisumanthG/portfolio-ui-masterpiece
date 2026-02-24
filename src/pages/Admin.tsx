@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
-import { Upload, FileUp, ChevronDown, ChevronRight } from "lucide-react";
+import { Upload, FileUp, ChevronDown, ChevronRight, ClipboardPaste, BarChart3 } from "lucide-react";
 
 const contentTables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 const homeTables: (keyof Database)[] = ["homeProfile", "homeAbout", "homeSkills", "homeLinks", "homeCollege"];
@@ -13,7 +13,15 @@ const homeTableLabels: Record<string, string> = {
   homeCollege: "College Slides",
 };
 
-type AdminTab = "Home" | keyof Database;
+type AdminTab = "Home" | "Stats" | keyof Database;
+
+// Check if field should show file upload
+const isFileField = (key: string) => {
+  const lower = key.toLowerCase();
+  return ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].some(
+    (word) => lower.includes(word)
+  );
+};
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -32,13 +40,13 @@ export default function AdminPage() {
   });
 
   const refresh = () => {
-    if (activeTab !== "Home") {
+    if (activeTab !== "Home" && activeTab !== "Stats") {
       setRecords(getAllRecords(activeTable));
     }
   };
 
   useEffect(() => {
-    if (authenticated && activeTab !== "Home") refresh();
+    if (authenticated && activeTab !== "Home" && activeTab !== "Stats") refresh();
   }, [activeTable, authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -107,7 +115,6 @@ export default function AdminPage() {
     }
   };
 
-  // Force re-render for home tab
   const [, setTick] = useState(0);
   const forceUpdate = () => setTick(t => t + 1);
 
@@ -148,41 +155,77 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
-  const isFileField = (key: string) => ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].includes(key.toLowerCase());
+  // Get preview shape for the field context
+  const getPreviewShape = (field: string): "circle" | "rectangle" => {
+    const lower = field.toLowerCase();
+    if (lower === "image" || lower === "collegeimage" || lower === "avatar" || lower === "photo") {
+      return "circle";
+    }
+    return "rectangle";
+  };
 
   const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const zoneId = `${id}-${field}`;
-    
+    const shape = getPreviewShape(field);
+
+    // Ctrl+V paste support
+    const handlePaste = useCallback((e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) handleFileUpload(field, file);
+          break;
+        }
+      }
+    }, [field]);
+
     return (
       <div
+        tabIndex={0}
+        onPaste={handlePaste}
         onDragOver={(e) => { e.preventDefault(); setDragOver(zoneId); }}
         onDragLeave={() => setDragOver(null)}
         onDrop={(e) => handleDrop(e, field)}
-        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
-          dragOver === zoneId 
-            ? "border-primary bg-primary/10 scale-[1.01]" 
+        className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+          dragOver === zoneId
+            ? "border-primary bg-primary/10 scale-[1.01]"
             : "border-border/50 hover:border-primary/40"
         }`}
       >
-        <input 
-          ref={inputRef} 
-          type="file" 
-          accept="image/*,.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.txt" 
-          className="hidden" 
-          onChange={(e) => e.target.files && handleMultiFileUpload(field, e.target.files)} 
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*,.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.txt"
+          className="hidden"
+          onChange={(e) => e.target.files && handleMultiFileUpload(field, e.target.files)}
         />
-        
+
         {value && value.startsWith("data:") ? (
           <div className="space-y-3">
-            {value.startsWith("data:image") ? (
-              <img src={value} alt="Preview" className="max-h-32 mx-auto rounded-lg border border-border/30" />
-            ) : (
-              <div className="flex items-center justify-center gap-2 text-emerald-400">
-                <FileUp className="w-5 h-5" />
-                <span className="text-sm font-medium">File uploaded</span>
-              </div>
-            )}
+            {/* Live preview */}
+            <div className="flex items-center justify-center">
+              <p className="text-[10px] text-muted-foreground/60 mb-1 absolute top-1 right-2">Live Preview</p>
+              {value.startsWith("data:image") ? (
+                <div
+                  className={`overflow-hidden border-2 border-primary/30 ${
+                    shape === "circle"
+                      ? "w-28 h-28 rounded-full"
+                      : "w-full max-w-xs h-36 rounded-lg"
+                  }`}
+                >
+                  <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-emerald-400 py-4">
+                  <FileUp className="w-5 h-5" />
+                  <span className="text-sm font-medium">File uploaded</span>
+                </div>
+              )}
+            </div>
             <div className="flex justify-center gap-2">
               <button onClick={() => inputRef.current?.click()} className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
                 Replace
@@ -193,18 +236,19 @@ export default function AdminPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            <Upload className="w-8 h-8 mx-auto text-muted-foreground/50" />
+          <div className="space-y-2">
+            <Upload className="w-7 h-7 mx-auto text-muted-foreground/50" />
             <div>
-              <p className="text-sm text-muted-foreground">Drag & drop files here</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">or</p>
+              <p className="text-xs text-muted-foreground">Drag & drop, browse, or <span className="text-primary font-medium">Ctrl+V</span> to paste</p>
             </div>
-            <button 
-              onClick={() => inputRef.current?.click()} 
-              className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-            >
-              Browse Files
-            </button>
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => inputRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+              >
+                Browse Files
+              </button>
+            </div>
             <p className="text-[10px] text-muted-foreground/40">Supports: JPG, PNG, GIF, WebP, PDF, DOC</p>
           </div>
         )}
@@ -260,6 +304,51 @@ export default function AdminPage() {
     setExpandedHomeSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Download stats component
+  const DownloadStats = () => {
+    const db = JSON.parse(localStorage.getItem("portfolio_db") || "{}");
+    const stats: { id: string; paperId: string; paperTitle: string; timestamp: string }[] = db.downloadStats || [];
+
+    // Group by paper
+    const grouped: Record<string, { title: string; count: number; lastDownload: string }> = {};
+    stats.forEach((s) => {
+      if (!grouped[s.paperId]) grouped[s.paperId] = { title: s.paperTitle, count: 0, lastDownload: s.timestamp };
+      grouped[s.paperId].count++;
+      if (s.timestamp > grouped[s.paperId].lastDownload) grouped[s.paperId].lastDownload = s.timestamp;
+    });
+
+    return (
+      <div className="space-y-4">
+        <div className="glass-card p-5">
+          <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Download Statistics
+          </h3>
+          <p className="text-muted-foreground text-xs mb-4">Total downloads: <span className="text-primary font-bold">{stats.length}</span></p>
+
+          {Object.keys(grouped).length === 0 ? (
+            <p className="text-muted-foreground text-xs">No downloads recorded yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(grouped).map(([id, data]) => (
+                <div key={id} className="glass-card p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-foreground text-xs font-medium">{data.title}</p>
+                    <p className="text-muted-foreground text-[10px]">Last: {new Date(data.lastDownload).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-primary font-heading font-bold text-lg">{data.count}</span>
+                    <p className="text-muted-foreground text-[10px]">downloads</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, hsl(225, 45%, 8%) 0%, hsl(228, 40%, 12%) 100%)" }}>
@@ -284,6 +373,7 @@ export default function AdminPage() {
 
   const allTabs: { label: string; value: AdminTab }[] = [
     { label: "Home", value: "Home" },
+    { label: "📊 Stats", value: "Stats" },
     ...contentTables.map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t as AdminTab })),
   ];
 
@@ -312,7 +402,7 @@ export default function AdminPage() {
               key={tab.value}
               onClick={() => {
                 setActiveTab(tab.value);
-                if (tab.value !== "Home") setActiveTable(tab.value as keyof Database);
+                if (tab.value !== "Home" && tab.value !== "Stats") setActiveTable(tab.value as keyof Database);
                 setEditingId(null);
                 setNewRecord(false);
               }}
@@ -327,7 +417,10 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* HOME TAB - grouped sections */}
+        {/* STATS TAB */}
+        {activeTab === "Stats" && <DownloadStats />}
+
+        {/* HOME TAB */}
         {activeTab === "Home" && (
           <div className="space-y-4">
             {homeTables.map((table) => {
@@ -336,7 +429,6 @@ export default function AdminPage() {
 
               return (
                 <div key={table} className="glass-card overflow-hidden">
-                  {/* Section header */}
                   <div
                     className="w-full flex items-center justify-between px-5 py-4 hover:bg-primary/5 transition-colors cursor-pointer"
                     onClick={() => toggleSection(table)}
@@ -354,10 +446,8 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Section content */}
                   {isExpanded && (
                     <div className="px-5 pb-4 space-y-3">
-                      {/* New record form if adding to this table */}
                       {newRecord && activeTable === table && (
                         <div className="glass-card p-4 space-y-3 border border-primary/30">
                           <h4 className="text-foreground text-xs font-heading font-semibold">New Record</h4>
@@ -389,8 +479,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* OTHER TABS - standard CRUD */}
-        {activeTab !== "Home" && (
+        {/* OTHER TABS */}
+        {activeTab !== "Home" && activeTab !== "Stats" && (
           <>
             <button onClick={() => startAdd()} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 

@@ -48,7 +48,7 @@ export default function InternshipsPage() {
           ))}
         </div>
 
-        {/* Content card - full height */}
+        {/* Content card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -62,11 +62,11 @@ export default function InternshipsPage() {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="glass-card p-6 md:p-8 h-full"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
-              {/* Image - full height */}
-              <div className="w-full h-64 md:h-full min-h-[350px] rounded-lg overflow-hidden border border-border/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+              {/* Image - reduced size, responsive */}
+              <div className="w-full h-48 sm:h-56 md:h-72 rounded-lg overflow-hidden border border-border/30">
                 {current.image ? (
-                  <img src={current.image} alt={current.company} className="w-full h-full object-cover" />
+                  <img src={current.image} alt={current.company} className="w-full h-full object-contain bg-secondary/30" />
                 ) : (
                   <div className="w-full h-full image-placeholder flex items-center justify-center">
                     <Globe className="w-10 h-10 text-muted-foreground/30" />
@@ -85,7 +85,7 @@ export default function InternshipsPage() {
                   <p className="text-muted-foreground text-sm leading-relaxed">{current.description}</p>
                 </div>
 
-                <div className="flex gap-3 mt-8">
+                <div className="flex gap-3 mt-6">
                   <motion.a whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} href={current.website || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-colors">
                     <ExternalLink className="w-4 h-4" />
                     Website
