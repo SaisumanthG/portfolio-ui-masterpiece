@@ -1,7 +1,8 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { User, Download, Github, Code2, Trophy } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getAllRecords } from "@/lib/database";
+import { toast } from "sonner";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -14,18 +15,31 @@ const scaleIn = {
 };
 
 export default function HomePage() {
-  const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "" });
+  const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "", imageNudge: "", collegeImageNudge: "" });
   const [aboutText, setAboutText] = useState("");
   const [skills, setSkills] = useState<{ category: string; items: string[] }[]>([]);
   const [links, setLinks] = useState<{ label: string; url: string; icon: string }[]>([]);
-  const [collegeSlides, setCollegeSlides] = useState<{ year: string; title: string; description: string; image: string }[]>([]);
+  const [collegeSlides, setCollegeSlides] = useState<{ year: string; title: string; description: string; image: string; imageNudge?: string }[]>([]);
   const [selectedYear, setSelectedYear] = useState("1st Year");
   const [yearContentIndex, setYearContentIndex] = useState(0);
   const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
+  // Parallax
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.6]);
+
   useEffect(() => {
     const profileRecs = getAllRecords("homeProfile");
-    if (profileRecs.length > 0) setProfile({ name: profileRecs[0].name || "Sai Sumanth G", subtitle: profileRecs[0].subtitle || "", image: profileRecs[0].image || "", collegeImage: profileRecs[0].collegeImage || "" });
+    if (profileRecs.length > 0) setProfile({
+      name: profileRecs[0].name || "Sai Sumanth G",
+      subtitle: profileRecs[0].subtitle || "",
+      image: profileRecs[0].image || "",
+      collegeImage: profileRecs[0].collegeImage || "",
+      imageNudge: profileRecs[0].imageNudge || "",
+      collegeImageNudge: profileRecs[0].collegeImageNudge || "",
+    });
     const aboutRecs = getAllRecords("homeAbout");
     if (aboutRecs.length > 0) setAboutText(aboutRecs[0].content || "");
     const skillRecs = getAllRecords("homeSkills");
@@ -37,7 +51,7 @@ export default function HomePage() {
     const linkRecs = getAllRecords("homeLinks");
     setLinks(linkRecs.map(l => ({ label: l.label, url: l.url, icon: l.icon })));
     const collegeRecs = getAllRecords("homeCollege");
-    setCollegeSlides(collegeRecs.map(c => ({ year: c.year, title: c.title, description: c.description, image: c.image || "" })));
+    setCollegeSlides(collegeRecs.map(c => ({ year: c.year, title: c.title, description: c.description, image: c.image || "", imageNudge: c.imageNudge || "" })));
   }, []);
 
   const currentYearItems = collegeSlides.filter(s => s.year === selectedYear);
@@ -53,14 +67,16 @@ export default function HomePage() {
 
   const handleDownloadResume = () => {
     const settings = getAllRecords("settings");
-    const resume = settings.find((s) => s.key === "resumePdf");
-    if (resume?.value) {
+    // Find the active resume, or fall back to first with value
+    const active = settings.find(s => s.active === "true") || settings.find(s => s.key === "resumePdf") || settings.find(s => s.value);
+    if (active?.value) {
       const a = document.createElement("a");
-      a.href = resume.value as string;
-      a.download = "Sai_Sumanth_Resume.pdf";
+      a.href = active.value as string;
+      a.download = `${active.key || "Resume"}.pdf`;
       a.click();
+      toast.success("Resume download started!");
     } else {
-      alert("Resume not uploaded yet. Upload via Admin panel at /web/admin");
+      toast.error("Resume not uploaded yet. Upload via Admin panel.");
     }
   };
 
@@ -82,23 +98,32 @@ export default function HomePage() {
     }
   };
 
+  const getNudgeStyle = (nudge: string | undefined) => {
+    if (!nudge) return undefined;
+    const [x, y] = nudge.split(",").map(Number);
+    return { objectPosition: `${50 + (x || 0)}% ${50 + (y || 0)}%` };
+  };
+
   const currentSlide = currentYearItems[yearContentIndex];
 
   return (
     <div className="space-y-12">
-      {/* Hero */}
+      {/* Hero with parallax */}
       <motion.section
+        ref={heroRef}
         initial="hidden"
         animate="visible"
         className="flex flex-col items-center text-center py-8"
+        style={{ y: heroY, opacity: heroOpacity }}
       >
         <motion.div
           variants={scaleIn}
           className="relative w-40 h-40 md:w-48 md:h-48 rounded-full border-2 border-foreground/20 flex items-center justify-center mb-6 glow-blue overflow-hidden"
           style={{ background: "radial-gradient(circle, hsl(230, 50%, 18%) 0%, hsl(225, 45%, 10%) 70%)" }}
+          whileHover={{ scale: 1.05 }}
         >
           {profile.image ? (
-            <img src={profile.image} alt={profile.name} className="w-full h-full object-cover" draggable={false} />
+            <img src={profile.image} alt={profile.name} className="w-full h-full object-cover" style={getNudgeStyle(profile.imageNudge)} draggable={false} />
           ) : (
             <User className="w-16 h-16 text-muted-foreground/50" />
           )}
@@ -117,7 +142,7 @@ export default function HomePage() {
 
       {/* About */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
-        <motion.div variants={fadeUp} custom={0} className="glass-card p-6 md:p-8">
+        <motion.div variants={fadeUp} custom={0} className="glass-card p-6 md:p-8" whileHover={{ scale: 1.01 }}>
           <h2 className="font-heading font-semibold text-lg text-foreground mb-3">About Me</h2>
           <p className="text-muted-foreground leading-relaxed">{aboutText}</p>
         </motion.div>
@@ -128,11 +153,11 @@ export default function HomePage() {
         <motion.h2 variants={fadeUp} custom={0} className="page-title mb-6">Skills</motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {skills.map((s, i) => (
-            <motion.div key={s.category} variants={fadeUp} custom={i + 1} className="glass-card p-5">
+            <motion.div key={s.category} variants={fadeUp} custom={i + 1} className="glass-card p-5" whileHover={{ y: -3, transition: { duration: 0.2 } }}>
               <h3 className="font-heading font-semibold text-primary text-sm mb-3">{s.category}</h3>
               <div className="flex flex-wrap gap-2">
                 {s.items.map((skill) => (
-                  <span key={skill} className="glass-pill px-3 py-1 rounded-full text-xs text-foreground/80">{skill}</span>
+                  <motion.span key={skill} className="glass-pill px-3 py-1 rounded-full text-xs text-foreground/80" whileHover={{ scale: 1.08 }}>{skill}</motion.span>
                 ))}
               </div>
             </motion.div>
@@ -167,12 +192,7 @@ export default function HomePage() {
       </motion.section>
 
       {/* Resume */}
-      <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        className="flex justify-center"
-      >
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex justify-center">
         <motion.button
           variants={scaleIn}
           onClick={handleDownloadResume}
@@ -194,7 +214,7 @@ export default function HomePage() {
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
                     {profile.collegeImage ? (
-                      <img src={profile.collegeImage} alt="College" className="w-full h-full object-cover" />
+                      <img src={profile.collegeImage} alt="College" className="w-full h-full object-cover" style={getNudgeStyle(profile.collegeImageNudge)} />
                     ) : (
                       <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
                     )}
@@ -231,7 +251,7 @@ export default function HomePage() {
                       className="image-placeholder w-full h-48 md:h-64 rounded-lg flex items-center justify-center overflow-hidden"
                     >
                       {currentSlide.image ? (
-                        <img src={currentSlide.image} alt="" className="w-full h-full object-cover" />
+                        <img src={currentSlide.image} alt="" className="w-full h-full object-cover" style={getNudgeStyle(currentSlide.imageNudge)} />
                       ) : (
                         <span className="text-muted-foreground/40 text-sm">{selectedYear} - Slide {yearContentIndex + 1}</span>
                       )}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
-import { Upload, FileUp, ChevronDown, ChevronRight, ClipboardPaste, BarChart3 } from "lucide-react";
+import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 const contentTables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 const homeTables: (keyof Database)[] = ["homeProfile", "homeAbout", "homeSkills", "homeLinks", "homeCollege"];
@@ -15,7 +15,6 @@ const homeTableLabels: Record<string, string> = {
 
 type AdminTab = "Home" | "Stats" | keyof Database;
 
-// Check if field should show file upload
 const isFileField = (key: string) => {
   const lower = key.toLowerCase();
   return ["image", "pdf", "photo", "file", "logo", "avatar", "thumbnail"].some(
@@ -38,6 +37,8 @@ export default function AdminPage() {
   const [expandedHomeSections, setExpandedHomeSections] = useState<Record<string, boolean>>({
     homeProfile: true, homeAbout: true, homeSkills: true, homeLinks: true, homeCollege: false,
   });
+  // Nudge offsets: stored as JSON string "x,y" in percentages
+  const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number }>>({});
 
   const refresh = () => {
     if (activeTab !== "Home" && activeTab !== "Stats") {
@@ -66,17 +67,36 @@ export default function AdminPage() {
       flat[k] = typeof v === "object" ? JSON.stringify(v) : String(v || "");
     });
     setEditData(flat);
+    // Load nudge offsets
+    const offsets: Record<string, { x: number; y: number }> = {};
+    Object.keys(flat).forEach(k => {
+      if (isFileField(k) && flat[k + "Nudge"]) {
+        try {
+          const [x, y] = flat[k + "Nudge"].split(",").map(Number);
+          offsets[k] = { x: x || 0, y: y || 0 };
+        } catch { offsets[k] = { x: 0, y: 0 }; }
+      }
+    });
+    setNudgeOffsets(offsets);
   };
 
   const saveEdit = (table?: keyof Database) => {
     if (!editingId) return;
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
-    Object.entries(editData).forEach(([k, v]) => {
+    // Save nudge offsets into editData
+    const finalData = { ...editData };
+    Object.entries(nudgeOffsets).forEach(([field, offset]) => {
+      if (offset.x !== 0 || offset.y !== 0) {
+        finalData[field + "Nudge"] = `${offset.x},${offset.y}`;
+      }
+    });
+    Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
     updateRecord(t, editingId, parsed);
     setEditingId(null);
+    setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
     else refresh();
   };
@@ -89,19 +109,27 @@ export default function AdminPage() {
     const sample = recs[0];
     const blank: Record<string, string> = {};
     if (sample) {
-      Object.keys(sample).forEach((k) => { if (k !== "id") blank[k] = ""; });
+      Object.keys(sample).forEach((k) => { if (k !== "id" && !k.endsWith("Nudge")) blank[k] = ""; });
     }
     setEditData(blank);
+    setNudgeOffsets({});
   };
 
   const saveNew = (table?: keyof Database) => {
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
-    Object.entries(editData).forEach(([k, v]) => {
+    const finalData = { ...editData };
+    Object.entries(nudgeOffsets).forEach(([field, offset]) => {
+      if (offset.x !== 0 || offset.y !== 0) {
+        finalData[field + "Nudge"] = `${offset.x},${offset.y}`;
+      }
+    });
+    Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
     addRecord(t, parsed);
     setNewRecord(false);
+    setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
     else refresh();
   };
@@ -138,29 +166,23 @@ export default function AdminPage() {
     if (files.length > 0) handleMultiFileUpload(field, files);
   };
 
-  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const settingsRecords = getAllRecords("settings");
-      const resumeSetting = settingsRecords.find((r) => r.key === "resumePdf");
-      if (resumeSetting) {
-        updateRecord("settings", resumeSetting.id, { value: reader.result as string });
-      } else {
-        addRecord("settings", { key: "resumePdf", value: reader.result as string });
-      }
-      alert("Resume uploaded!");
-    };
-    reader.readAsDataURL(file);
+  const nudge = (field: string, dir: "up" | "down" | "left" | "right") => {
+    setNudgeOffsets(prev => {
+      const current = prev[field] || { x: 0, y: 0 };
+      const step = 5;
+      const next = { ...current };
+      if (dir === "up") next.y = Math.max(-50, current.y - step);
+      if (dir === "down") next.y = Math.min(50, current.y + step);
+      if (dir === "left") next.x = Math.max(-50, current.x - step);
+      if (dir === "right") next.x = Math.min(50, current.x + step);
+      return { ...prev, [field]: next };
+    });
   };
 
-  // Get preview shape for the field context
   const getPreviewShape = (field: string): "circle" | "rectangle" => {
     const lower = field.toLowerCase();
-    if (lower === "image" || lower === "collegeimage" || lower === "avatar" || lower === "photo") {
-      return "circle";
-    }
+    if (lower === "image" && activeTable === "homeProfile") return "circle";
+    if (lower === "collegeimage") return "circle";
     return "rectangle";
   };
 
@@ -168,13 +190,13 @@ export default function AdminPage() {
     const inputRef = useRef<HTMLInputElement>(null);
     const zoneId = `${id}-${field}`;
     const shape = getPreviewShape(field);
+    const offset = nudgeOffsets[field] || { x: 0, y: 0 };
 
-    // Ctrl+V paste support
     const handlePaste = useCallback((e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
       for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
+        if (item.type.startsWith("image/") || item.type === "application/pdf") {
           e.preventDefault();
           const file = item.getAsFile();
           if (file) handleFileUpload(field, file);
@@ -206,9 +228,8 @@ export default function AdminPage() {
 
         {value && value.startsWith("data:") ? (
           <div className="space-y-3">
-            {/* Live preview */}
+            <p className="text-[10px] text-muted-foreground/60 absolute top-1 right-2">Live Preview</p>
             <div className="flex items-center justify-center">
-              <p className="text-[10px] text-muted-foreground/60 mb-1 absolute top-1 right-2">Live Preview</p>
               {value.startsWith("data:image") ? (
                 <div
                   className={`overflow-hidden border-2 border-primary/30 ${
@@ -217,7 +238,12 @@ export default function AdminPage() {
                       : "w-full max-w-xs h-36 rounded-lg"
                   }`}
                 >
-                  <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                  <img
+                    src={value}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: `${50 + offset.x}% ${50 + offset.y}%` }}
+                  />
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2 text-emerald-400 py-4">
@@ -226,11 +252,41 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+
+            {/* Nudge Controls */}
+            {value.startsWith("data:image") && (
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-[10px] text-muted-foreground/50 mb-1">Position</p>
+                <div className="flex flex-col items-center gap-0.5">
+                  <button type="button" onClick={() => nudge(field, "up")} className="w-7 h-7 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex gap-0.5">
+                    <button type="button" onClick={() => nudge(field, "left")} className="w-7 h-7 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button type="button" onClick={() => { setNudgeOffsets(prev => ({ ...prev, [field]: { x: 0, y: 0 } })); }} className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/30 transition-colors" title="Reset">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    </button>
+                    <button type="button" onClick={() => nudge(field, "right")} className="w-7 h-7 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => nudge(field, "down")} className="w-7 h-7 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {(offset.x !== 0 || offset.y !== 0) && (
+                  <p className="text-[9px] text-primary/60">x:{offset.x}% y:{offset.y}%</p>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-center gap-2">
-              <button onClick={() => inputRef.current?.click()} className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+              <button type="button" onClick={() => inputRef.current?.click()} className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
                 Replace
               </button>
-              <button onClick={() => setEditData(prev => ({ ...prev, [field]: "" }))} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">
+              <button type="button" onClick={() => setEditData(prev => ({ ...prev, [field]: "" }))} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">
                 Remove
               </button>
             </div>
@@ -243,6 +299,7 @@ export default function AdminPage() {
             </div>
             <div className="flex justify-center gap-2">
               <button
+                type="button"
                 onClick={() => inputRef.current?.click()}
                 className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
               >
@@ -260,11 +317,16 @@ export default function AdminPage() {
     if (editingId === record.id) {
       return (
         <div className="glass-card p-4 space-y-2">
-          {Object.entries(editData).filter(([k]) => k !== "id").map(([key, val]) => (
+          {Object.entries(editData).filter(([k]) => k !== "id" && !k.endsWith("Nudge")).map(([key, val]) => (
             <div key={key}>
               <label className="text-xs text-muted-foreground block mb-1">{key}</label>
               {isFileField(key) ? (
                 <FileUploadZone field={key} value={val} id={record.id} />
+              ) : key === "icon" ? (
+                <div className="space-y-2">
+                  <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" placeholder="Type icon name or upload image below" />
+                  <FileUploadZone field={key} value={val.startsWith("data:") ? val : ""} id={record.id + "-icon"} />
+                </div>
               ) : (
                 <input value={val} onChange={(e) => setEditData({ ...editData, [key]: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
               )}
@@ -282,7 +344,7 @@ export default function AdminPage() {
       <div className="glass-card p-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
-            {Object.entries(record).filter(([k]) => k !== "id").map(([key, val]) => (
+            {Object.entries(record).filter(([k]) => k !== "id" && !k.endsWith("Nudge")).map(([key, val]) => (
               <p key={key} className="text-xs">
                 <span className="text-primary font-medium">{key}:</span>{" "}
                 <span className="text-foreground/80">
@@ -304,12 +366,102 @@ export default function AdminPage() {
     setExpandedHomeSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Download stats component
+  // Settings tab - resume management
+  const SettingsTab = () => {
+    const settingsRecords = getAllRecords("settings");
+
+    const setAsDownload = (id: string) => {
+      // Mark all as not active, mark this one as active
+      settingsRecords.forEach(r => {
+        if (r.key?.toString().startsWith("resume")) {
+          updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" });
+        }
+      });
+      forceUpdate();
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-heading font-semibold text-foreground">Resume Management</h3>
+          <button onClick={() => startAdd("settings")} className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Resume</button>
+        </div>
+        <p className="text-muted-foreground text-xs mb-4">Upload multiple resumes. Set one as the active download.</p>
+
+        {newRecord && activeTable === "settings" && (
+          <div className="glass-card p-4 mb-4 space-y-3 border border-primary/30">
+            <h4 className="text-foreground text-xs font-heading font-semibold">New Resume</h4>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Label</label>
+              <input value={editData.key || ""} onChange={(e) => setEditData({ ...editData, key: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" placeholder="e.g. Resume v2, SDE Resume" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">PDF File</label>
+              <FileUploadZone field="value" value={editData.value || ""} id="new-resume" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { saveNew("settings"); }} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Save</button>
+              <button onClick={() => setNewRecord(false)} className="px-3 py-1.5 rounded-lg glass-pill text-muted-foreground text-xs">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {settingsRecords.map((record) => {
+          if (editingId === record.id) {
+            return (
+              <div key={record.id} className="glass-card p-4 space-y-3 border border-primary/30">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Label</label>
+                  <input value={editData.key || ""} onChange={(e) => setEditData({ ...editData, key: e.target.value })} className="w-full px-3 py-1.5 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">PDF File</label>
+                  <FileUploadZone field="value" value={editData.value || ""} id={record.id} />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => saveEdit("settings")} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Save</button>
+                  <button onClick={() => setEditingId(null)} className="px-3 py-1.5 rounded-lg glass-pill text-muted-foreground text-xs">Cancel</button>
+                </div>
+              </div>
+            );
+          }
+
+          const isActive = record.active === "true" || (settingsRecords.filter(r => r.active === "true").length === 0 && record.key === "resumePdf");
+
+          return (
+            <div key={record.id} className={`glass-card p-4 flex items-center justify-between ${isActive ? "border border-primary/40" : ""}`}>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-foreground text-sm font-medium">{record.key || "Untitled"}</p>
+                  {isActive && (
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Active Download
+                    </span>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-xs mt-1">
+                  {record.value && (record.value as string).startsWith("data:") ? "📎 PDF uploaded" : "No file"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {!isActive && (
+                  <button onClick={() => setAsDownload(record.id)} className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs hover:bg-emerald-500/20">
+                    Set Active
+                  </button>
+                )}
+                <button onClick={() => startEdit(record, "settings")} className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs hover:bg-primary/20">Edit</button>
+                <button onClick={() => handleDelete(record.id, "settings")} className="px-3 py-1 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20">Delete</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const DownloadStats = () => {
     const db = JSON.parse(localStorage.getItem("portfolio_db") || "{}");
     const stats: { id: string; paperId: string; paperTitle: string; timestamp: string }[] = db.downloadStats || [];
-
-    // Group by paper
     const grouped: Record<string, { title: string; count: number; lastDownload: string }> = {};
     stats.forEach((s) => {
       if (!grouped[s.paperId]) grouped[s.paperId] = { title: s.paperTitle, count: 0, lastDownload: s.timestamp };
@@ -325,7 +477,6 @@ export default function AdminPage() {
             Download Statistics
           </h3>
           <p className="text-muted-foreground text-xs mb-4">Total downloads: <span className="text-primary font-bold">{stats.length}</span></p>
-
           {Object.keys(grouped).length === 0 ? (
             <p className="text-muted-foreground text-xs">No downloads recorded yet.</p>
           ) : (
@@ -374,7 +525,8 @@ export default function AdminPage() {
   const allTabs: { label: string; value: AdminTab }[] = [
     { label: "Home", value: "Home" },
     { label: "📊 Stats", value: "Stats" },
-    ...contentTables.map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t as AdminTab })),
+    ...contentTables.filter(t => t !== "settings").map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t as AdminTab })),
+    { label: "Settings", value: "settings" as AdminTab },
   ];
 
   return (
@@ -383,16 +535,6 @@ export default function AdminPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-heading font-bold text-primary text-2xl">Admin Panel</h1>
           <button onClick={() => setAuthenticated(false)} className="glass-pill px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground">Logout</button>
-        </div>
-
-        {/* Resume upload */}
-        <div className="glass-card p-5 mb-6">
-          <h3 className="font-heading font-semibold text-foreground mb-2">Resume Management</h3>
-          <p className="text-muted-foreground text-xs mb-3">Upload or replace the resume PDF file.</p>
-          <label className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer">
-            Upload Resume PDF
-            <input type="file" accept=".pdf" className="hidden" onChange={handleResumeUpload} />
-          </label>
         </div>
 
         {/* Tabs */}
@@ -420,6 +562,9 @@ export default function AdminPage() {
         {/* STATS TAB */}
         {activeTab === "Stats" && <DownloadStats />}
 
+        {/* SETTINGS TAB */}
+        {activeTab === "settings" && <SettingsTab />}
+
         {/* HOME TAB */}
         {activeTab === "Home" && (
           <div className="space-y-4">
@@ -438,12 +583,12 @@ export default function AdminPage() {
                       <h3 className="font-heading font-semibold text-foreground text-sm">{homeTableLabels[table] || table}</h3>
                       <span className="text-muted-foreground text-xs">({tableRecords.length} records)</span>
                     </div>
-                    <button
+                    <span
                       onClick={(e) => { e.stopPropagation(); startAdd(table); }}
-                      className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                      className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors cursor-pointer"
                     >
                       + Add
-                    </button>
+                    </span>
                   </div>
 
                   {isExpanded && (
@@ -467,7 +612,6 @@ export default function AdminPage() {
                           </div>
                         </div>
                       )}
-
                       {tableRecords.map((record) => (
                         <RecordCard key={record.id} record={record} table={table} />
                       ))}
@@ -479,8 +623,8 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* OTHER TABS */}
-        {activeTab !== "Home" && activeTab !== "Stats" && (
+        {/* OTHER TABS (not Home, Stats, Settings) */}
+        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && (
           <>
             <button onClick={() => startAdd()} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 
