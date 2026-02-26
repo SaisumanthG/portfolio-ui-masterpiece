@@ -13,7 +13,7 @@ const homeTableLabels: Record<string, string> = {
   homeCollege: "College Slides",
 };
 
-type AdminTab = "Home" | "Stats" | keyof Database;
+type AdminTab = "Home" | "Stats" | "Customize" | keyof Database;
 
 const isFileField = (key: string) => {
   const lower = key.toLowerCase();
@@ -41,13 +41,13 @@ export default function AdminPage() {
   const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number }>>({});
 
   const refresh = () => {
-    if (activeTab !== "Home" && activeTab !== "Stats") {
+    if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize") {
       setRecords(getAllRecords(activeTable));
     }
   };
 
   useEffect(() => {
-    if (authenticated && activeTab !== "Home" && activeTab !== "Stats") refresh();
+    if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize") refresh();
   }, [activeTable, authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -373,9 +373,7 @@ export default function AdminPage() {
     const setAsDownload = (id: string) => {
       // Mark all as not active, mark this one as active
       settingsRecords.forEach(r => {
-        if (r.key?.toString().startsWith("resume")) {
-          updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" });
-        }
+        updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" });
       });
       forceUpdate();
     };
@@ -500,6 +498,76 @@ export default function AdminPage() {
     );
   };
 
+  // Customization tab - box sizes per page
+  const CustomizeTab = () => {
+    const raw = localStorage.getItem("portfolio_customizations");
+    const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>(() => {
+      try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+    });
+
+    const pages = [
+      { key: "projects", label: "Projects", boxes: [{ key: "cardHeight", label: "Card Image Height (px)", min: 120, max: 400, default: 192 }] },
+      { key: "internships", label: "Internships", boxes: [{ key: "imageHeight", label: "Image Box Height (px)", min: 80, max: 300, default: 160 }, { key: "cardPadding", label: "Card Padding (px)", min: 8, max: 40, default: 16 }] },
+      { key: "hackathons", label: "Hackathons", boxes: [{ key: "cardHeight", label: "Card Image Height (px)", min: 120, max: 400, default: 192 }] },
+      { key: "papers", label: "Papers", boxes: [{ key: "imageHeight", label: "Image Box Height (px)", min: 120, max: 400, default: 224 }] },
+      { key: "certificates", label: "Certificates", boxes: [{ key: "imageHeight", label: "Certificate Image Height (px)", min: 120, max: 400, default: 224 }] },
+      { key: "home", label: "Home", boxes: [{ key: "profileSize", label: "Profile Circle Size (px)", min: 100, max: 300, default: 192 }, { key: "collegeImageHeight", label: "College Slide Image Height (px)", min: 120, max: 400, default: 256 }] },
+    ];
+
+    const getValue = (page: string, box: string, def: number) => customizations[page]?.[box] ?? def;
+
+    const setValue = (page: string, box: string, val: number) => {
+      const next = { ...customizations, [page]: { ...customizations[page], [box]: val } };
+      setCustomizations(next);
+      localStorage.setItem("portfolio_customizations", JSON.stringify(next));
+    };
+
+    const resetAll = () => {
+      setCustomizations({});
+      localStorage.removeItem("portfolio_customizations");
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-heading font-semibold text-foreground">Box Size Customization</h3>
+          <button onClick={resetAll} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">Reset All</button>
+        </div>
+        <p className="text-muted-foreground text-xs mb-4">Adjust image box sizes for each page. Changes apply instantly.</p>
+
+        {pages.map(page => (
+          <div key={page.key} className="glass-card p-4 space-y-3">
+            <h4 className="font-heading font-semibold text-foreground text-sm">{page.label}</h4>
+            {page.boxes.map(box => {
+              const val = getValue(page.key, box.key, box.default);
+              return (
+                <div key={box.key} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground">{box.label}</label>
+                    <span className="text-xs text-primary font-medium">{val}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={box.min}
+                    max={box.max}
+                    value={val}
+                    onChange={(e) => setValue(page.key, box.key, Number(e.target.value))}
+                    className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="mt-2 rounded-lg border border-border/30 overflow-hidden" style={{ height: Math.min(val, 120) }}>
+                    <div className="w-full h-full bg-secondary/40 flex items-center justify-center text-muted-foreground/40 text-[10px]">
+                      Preview: {val}px
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, hsl(225, 45%, 8%) 0%, hsl(228, 40%, 12%) 100%)" }}>
@@ -527,6 +595,7 @@ export default function AdminPage() {
     { label: "📊 Stats", value: "Stats" },
     ...contentTables.filter(t => t !== "settings").map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t as AdminTab })),
     { label: "Settings", value: "settings" as AdminTab },
+    { label: "🎨 Customize", value: "Customize" },
   ];
 
   return (
@@ -561,6 +630,9 @@ export default function AdminPage() {
 
         {/* STATS TAB */}
         {activeTab === "Stats" && <DownloadStats />}
+
+        {/* CUSTOMIZE TAB */}
+        {activeTab === "Customize" && <CustomizeTab />}
 
         {/* SETTINGS TAB */}
         {activeTab === "settings" && <SettingsTab />}
@@ -624,7 +696,7 @@ export default function AdminPage() {
         )}
 
         {/* OTHER TABS (not Home, Stats, Settings) */}
-        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && (
+        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && activeTab !== "Customize" && (
           <>
             <button onClick={() => startAdd()} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 
