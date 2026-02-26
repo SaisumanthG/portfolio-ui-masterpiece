@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Download, Share2, ExternalLink, Eye, X, ChevronDown } from "lucide-react";
+import { FileText, Download, Share2, ExternalLink, Eye, X } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
@@ -26,9 +26,8 @@ function trackDownload(paperId: string, paperTitle: string) {
 
 export default function PapersPage() {
   const [papers, setPapers] = useState<DBRecord[]>([]);
-  const [expandedPaper, setExpandedPaper] = useState<string | null>(null);
-  const [expandedBlobUrl, setExpandedBlobUrl] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewPaper, setViewPaper] = useState<DBRecord | null>(null);
+  const [viewBlobUrl, setViewBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setPapers(getAllRecords("papers"));
@@ -47,31 +46,18 @@ export default function PapersPage() {
     } catch { return null; }
   }, []);
 
-  const toggleExpand = (paperId: string, pdf: string) => {
-    if (expandedPaper === paperId) {
-      setExpandedPaper(null);
-      if (expandedBlobUrl) URL.revokeObjectURL(expandedBlobUrl);
-      setExpandedBlobUrl(null);
-    } else {
-      if (expandedBlobUrl) URL.revokeObjectURL(expandedBlobUrl);
-      setExpandedPaper(paperId);
-      const url = getBlobUrl(pdf);
-      setExpandedBlobUrl(url);
-    }
+  const openViewPaper = (paper: DBRecord) => {
+    if (viewBlobUrl) URL.revokeObjectURL(viewBlobUrl);
+    const url = paper.pdf ? getBlobUrl(paper.pdf as string) : null;
+    setViewBlobUrl(url);
+    setViewPaper(paper);
   };
 
-  useEffect(() => {
-    if (!expandedPaper) return;
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setExpandedPaper(null);
-        if (expandedBlobUrl) URL.revokeObjectURL(expandedBlobUrl);
-        setExpandedBlobUrl(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [expandedPaper, expandedBlobUrl]);
+  const closeViewPaper = () => {
+    setViewPaper(null);
+    if (viewBlobUrl) URL.revokeObjectURL(viewBlobUrl);
+    setViewBlobUrl(null);
+  };
 
   const handleShare = async (paper: DBRecord) => {
     const shareData: ShareData = {
@@ -126,14 +112,12 @@ export default function PapersPage() {
   const handleEmail = (paper: DBRecord) => {
     const subject = encodeURIComponent(`Regarding: ${paper.title}`);
     let body = `Hi,\n\nI'd like to discuss the paper: "${paper.title}"\n\n${paper.description}\n\nView: ${window.location.href}`;
-    if (paper.pdf) {
-      body += `\n\n[PDF attached via download link]`;
-    }
+    if (paper.pdf) body += `\n\n[PDF attached via download link]`;
     window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
   };
 
   return (
-    <div ref={containerRef}>
+    <div>
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,15 +138,27 @@ export default function PapersPage() {
             variants={cardVariant}
             className="glass-card overflow-hidden hover-glass"
           >
-            {/* Paper image if exists */}
+            {/* Paper image */}
             {paper.image && (
-              <div className="w-full h-48 md:h-56 overflow-hidden">
+              <div className="relative w-full h-48 md:h-56 overflow-hidden">
                 <img
                   src={paper.image as string}
                   alt={paper.title as string}
                   className="w-full h-full object-cover"
                   style={paper.imageNudge ? { objectPosition: `${50 + Number((paper.imageNudge as string).split(",")[0])}% ${50 + Number((paper.imageNudge as string).split(",")[1])}%` } : undefined}
                 />
+                {/* Action buttons overlaid on image */}
+                <div className="absolute top-3 right-3 flex flex-col gap-2">
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDownload(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                    <Download className="w-4 h-4" />
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleShare(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                    <Share2 className="w-4 h-4" />
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleEmail(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                    <FileText className="w-4 h-4" />
+                  </motion.button>
+                </div>
               </div>
             )}
 
@@ -177,63 +173,69 @@ export default function PapersPage() {
                 </a>
 
                 {paper.pdf && (
-                  <button
-                    onClick={() => toggleExpand(paper.id, paper.pdf as string)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      expandedPaper === paper.id
-                        ? "bg-primary/20 text-primary border border-primary/40"
-                        : "glass-pill text-muted-foreground hover:text-foreground"
-                    }`}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => openViewPaper(paper)}
+                    className="flex items-center gap-1 text-primary text-xs font-medium hover:underline"
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3 h-3" />
                     View Paper
-                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedPaper === paper.id ? "rotate-180" : ""}`} />
-                  </button>
+                  </motion.button>
                 )}
-
-                <button onClick={() => handleDownload(paper)} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-lg text-muted-foreground hover:text-primary text-sm transition-colors">
-                  <Download className="w-3.5 h-3.5" />
-                  Download
-                </button>
-
-                <button onClick={() => handleShare(paper)} className="flex items-center gap-2 glass-pill px-4 py-2 rounded-lg text-muted-foreground hover:text-primary text-sm transition-colors">
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share
-                </button>
               </div>
-
-              {/* Expandable PDF viewer */}
-              <AnimatePresence>
-                {expandedPaper === paper.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="mt-4 rounded-lg border border-border/30 overflow-hidden relative">
-                      <button
-                        onClick={() => { setExpandedPaper(null); if (expandedBlobUrl) { URL.revokeObjectURL(expandedBlobUrl); setExpandedBlobUrl(null); } }}
-                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-background/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                      {expandedBlobUrl ? (
-                        <iframe src={expandedBlobUrl} className="w-full h-[60vh] md:h-[70vh]" title={paper.title as string} />
-                      ) : (
-                        <div className="w-full h-64 flex items-center justify-center text-muted-foreground">
-                          <FileText className="w-12 h-12 text-muted-foreground/30" />
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </motion.div>
         ))}
       </div>
+
+      {/* View Paper Modal - just PDF with close button, no editing toolbar */}
+      <AnimatePresence>
+        {viewPaper && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-background/90 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={closeViewPaper}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl w-full h-[85vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button onClick={closeViewPaper} className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-80">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="glass-card p-2 rounded-xl h-full flex flex-col">
+                {viewBlobUrl ? (
+                  <iframe
+                    src={viewBlobUrl + "#toolbar=0&navpanes=0"}
+                    className="w-full flex-1 rounded-lg"
+                    title={viewPaper.title as string}
+                  />
+                ) : (
+                  <div className="w-full flex-1 flex items-center justify-center text-muted-foreground">
+                    <FileText className="w-16 h-16 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="text-center py-3 space-y-1">
+                  <h3 className="font-heading font-bold text-foreground text-sm">{viewPaper.title}</h3>
+                  <button
+                    onClick={() => handleDownload(viewPaper)}
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Paper
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
