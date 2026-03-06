@@ -28,9 +28,11 @@ export default function CertificatesPage() {
     };
     if (navigator.share) {
       try {
-        if (cert.image && (cert.image as string).startsWith("data:")) {
+        // Try sharing with file
+        const imgSrc = cert.previewImage || cert.image;
+        if (imgSrc && (imgSrc as string).startsWith("data:")) {
           try {
-            const parts = (cert.image as string).split(",");
+            const parts = (imgSrc as string).split(",");
             const mime = parts[0].match(/:(.*?);/)?.[1] || "image/jpeg";
             const byteString = atob(parts[1]);
             const ab = new ArrayBuffer(byteString.length);
@@ -48,22 +50,40 @@ export default function CertificatesPage() {
         await navigator.share(shareData);
       } catch { /* cancelled */ }
     } else {
-      try {
-        await navigator.clipboard.writeText(`${cert.title} - Issued by ${cert.issuer}\n${window.location.href}`);
-        toast.success("Link copied to clipboard!");
-      } catch { toast.error("Could not share"); }
+      // Fallback: open Twitter share
+      const url = encodeURIComponent(window.location.href);
+      const title = encodeURIComponent(cert.title as string);
+      window.open(`https://twitter.com/intent/tweet?text=${title}&url=${url}`, "_blank", "width=550,height=420");
     }
   };
 
   const handleDownloadCert = (cert: DBRecord) => {
-    if (cert.image && (cert.image as string).startsWith("data:")) {
+    // Download the file if available, otherwise the preview image
+    const fileSrc = cert.file || cert.previewImage || cert.image;
+    if (fileSrc && (fileSrc as string).startsWith("data:")) {
       const a = document.createElement("a");
-      a.href = cert.image as string;
-      const ext = (cert.image as string).includes("pdf") ? "pdf" : "jpg";
+      a.href = fileSrc as string;
+      const ext = (fileSrc as string).includes("pdf") ? "pdf" : "jpg";
       a.download = `${cert.title}.${ext}`;
       a.click();
       toast.success("Download started!");
     }
+  };
+
+  // Get nudge + zoom style
+  const getImageStyle = (record: DBRecord, field: string = "image") => {
+    const nudgeKey = field + "Nudge";
+    if (!record[nudgeKey]) return undefined;
+    const parts = (record[nudgeKey] as string).split(",").map(Number);
+    return {
+      objectPosition: `${50 + (parts[0] || 0)}% ${50 + (parts[1] || 0)}%`,
+      transform: `scale(${parts[2] || 1})`,
+    };
+  };
+
+  // Determine which image to show as preview
+  const getDisplayImage = (cert: DBRecord) => {
+    return cert.previewImage || cert.image;
   };
 
   return (
@@ -91,12 +111,12 @@ export default function CertificatesPage() {
           >
             <div className="glass-card p-5 rounded-lg h-full">
               <div className="relative w-full h-48 md:h-56 rounded-lg overflow-hidden mb-4 border border-border/20">
-                {cert.image ? (
+                {getDisplayImage(cert) ? (
                   <img
-                    src={cert.image}
+                    src={getDisplayImage(cert)}
                     alt={cert.title}
                     className="w-full h-full object-contain bg-secondary/30 transition-transform duration-700 group-hover:scale-105"
-                    style={cert.imageNudge ? { objectPosition: `${50 + Number((cert.imageNudge as string).split(",")[0])}% ${50 + Number((cert.imageNudge as string).split(",")[1])}%` } : undefined}
+                    style={getImageStyle(cert, cert.previewImage ? "previewImage" : "image")}
                   />
                 ) : (
                   <div className="w-full h-full image-placeholder flex items-center justify-center">
@@ -165,8 +185,8 @@ export default function CertificatesPage() {
                 <X className="w-4 h-4" />
               </button>
               <div className="glass-card p-4 rounded-xl">
-                {viewCert.image ? (
-                  <img src={viewCert.image} alt={viewCert.title} className="w-full rounded-lg mb-4 max-h-[70vh] object-contain" />
+                {getDisplayImage(viewCert) ? (
+                  <img src={getDisplayImage(viewCert)} alt={viewCert.title} className="w-full rounded-lg mb-4 max-h-[70vh] object-contain" />
                 ) : (
                   <div className="w-full h-64 image-placeholder flex items-center justify-center rounded-lg mb-4">
                     <ImageIcon className="w-16 h-16 text-primary/20" />
