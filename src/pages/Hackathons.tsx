@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Trophy, Github } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
+import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
@@ -13,6 +14,7 @@ const cardVariant = {
 
 export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<DBRecord[]>([]);
+  const customization = useCustomization("hackathons");
 
   useEffect(() => {
     setHackathons(getAllRecords("hackathons"));
@@ -42,7 +44,7 @@ export default function HackathonsPage() {
             className="group rounded-lg border border-border/40 p-1 bg-secondary/10"
           >
             <div className="glass-card p-0 overflow-hidden hover-glass flex flex-col h-full">
-              <div className="relative w-full h-52 overflow-hidden">
+              <div className="relative w-full overflow-hidden" style={{ height: customization.cardHeight || 192 }}>
                 {h.image ? (
                   <img src={h.image} alt={h.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
@@ -53,7 +55,7 @@ export default function HackathonsPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
               </div>
 
-              <div className="p-5 flex flex-col flex-1">
+              <div className="flex flex-col flex-1" style={{ padding: customization.cardPadding || 16 }}>
                 <h3 className="font-heading font-bold text-foreground text-base mb-2">{h.title}</h3>
                 <p className="text-muted-foreground text-xs leading-relaxed mb-4 flex-1">{h.description}</p>
 
