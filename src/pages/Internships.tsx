@@ -2,10 +2,12 @@ import { motion } from "framer-motion";
 import { Building2, Globe, ExternalLink, Github } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
+import { useCustomization } from "@/hooks/use-customization";
 
 export default function InternshipsPage() {
   const [internships, setInternships] = useState<DBRecord[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const customization = useCustomization("internships");
 
   useEffect(() => {
     setInternships(getAllRecords("internships"));
@@ -62,9 +64,8 @@ export default function InternshipsPage() {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="glass-card p-4"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Image - compact */}
-              <div className="w-full h-32 sm:h-36 md:h-40 rounded-lg overflow-hidden border border-border/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ padding: customization.cardPadding || 16 }}>
+              <div className="w-full rounded-lg overflow-hidden border border-border/30" style={{ height: customization.imageHeight || 160 }}>
                 {current.image ? (
                   <img
                     src={current.image}

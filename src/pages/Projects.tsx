@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { FolderOpen, ExternalLink, Github, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
+import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
@@ -13,6 +14,7 @@ const cardVariant = {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<DBRecord[]>([]);
+  const customization = useCustomization("projects");
 
   useEffect(() => {
     setProjects(getAllRecords("projects"));
@@ -40,14 +42,15 @@ export default function ProjectsPage() {
             viewport={{ once: true, margin: "-30px" }}
             variants={cardVariant}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="glass-card p-5 hover-glass"
+            className="glass-card hover-glass"
+            style={{ padding: customization.cardPadding || 16 }}
           >
             <div className="flex items-center gap-2 mb-3">
               <FolderOpen className={`w-5 h-5 ${folderColors[i % folderColors.length]}`} />
               <h3 className="font-heading font-semibold text-foreground text-sm">{project.title}</h3>
             </div>
 
-            <div className="w-full h-36 rounded-lg overflow-hidden mb-3 border border-border/20">
+            <div className="w-full rounded-lg overflow-hidden mb-3 border border-border/20" style={{ height: customization.cardHeight || 192 }}>
               {project.image ? (
                 <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
               ) : (

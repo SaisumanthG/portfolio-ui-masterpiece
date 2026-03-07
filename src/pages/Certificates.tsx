@@ -3,6 +3,7 @@ import { Award, ImageIcon, Calendar, Share2, ExternalLink, Eye, X, Download } fr
 import { useEffect, useState, useCallback } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
+import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
@@ -15,6 +16,7 @@ const cardVariant = {
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<DBRecord[]>([]);
   const [viewCert, setViewCert] = useState<DBRecord | null>(null);
+  const customization = useCustomization("certificates");
 
   useEffect(() => {
     setCertificates(getAllRecords("certificates"));
@@ -109,8 +111,8 @@ export default function CertificatesPage() {
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="group hover-glass rounded-xl border border-primary/20 bg-gradient-to-br from-secondary/30 to-secondary/10 p-1 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
           >
-            <div className="glass-card p-5 rounded-lg h-full">
-              <div className="relative w-full h-48 md:h-56 rounded-lg overflow-hidden mb-4 border border-border/20">
+            <div className="glass-card rounded-lg h-full" style={{ padding: customization.cardPadding || 20 }}>
+              <div className="relative w-full rounded-lg overflow-hidden mb-4 border border-border/20" style={{ height: customization.imageHeight || 224 }}>
                 {getDisplayImage(cert) ? (
                   <img
                     src={getDisplayImage(cert)}

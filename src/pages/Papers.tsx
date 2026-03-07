@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Download, Share2, ExternalLink, Eye, X, ImageIcon } from "lucide-react";
+import { FileText, Download, Share2, ExternalLink, Eye, X, ImageIcon, Mail } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
+import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
@@ -28,6 +29,7 @@ export default function PapersPage() {
   const [papers, setPapers] = useState<DBRecord[]>([]);
   const [viewPaper, setViewPaper] = useState<DBRecord | null>(null);
   const [viewBlobUrl, setViewBlobUrl] = useState<string | null>(null);
+  const customization = useCustomization("papers");
 
   useEffect(() => {
     setPapers(getAllRecords("papers"));
@@ -48,7 +50,8 @@ export default function PapersPage() {
 
   const openViewPaper = (paper: DBRecord) => {
     if (viewBlobUrl) URL.revokeObjectURL(viewBlobUrl);
-    const url = paper.pdf ? getBlobUrl(paper.pdf as string) : null;
+    const pdfSrc = paper.pdf || paper.file;
+    const url = pdfSrc ? getBlobUrl(pdfSrc as string) : null;
     setViewBlobUrl(url);
     setViewPaper(paper);
   };
@@ -67,9 +70,10 @@ export default function PapersPage() {
     };
     if (navigator.share) {
       try {
-        if (paper.pdf) {
+        const pdfSrc = paper.pdf || paper.file;
+        if (pdfSrc) {
           try {
-            const blobUrl = getBlobUrl(paper.pdf as string);
+            const blobUrl = getBlobUrl(pdfSrc as string);
             if (blobUrl) {
               const resp = await fetch(blobUrl);
               const blob = await resp.blob();
@@ -85,21 +89,20 @@ export default function PapersPage() {
         await navigator.share(shareData);
       } catch { /* cancelled */ }
     } else {
-      // Fallback: open share-like options
-      const text = `${paper.title} - ${paper.description}\n${window.location.href}`;
-      const encoded = encodeURIComponent(text);
-      const url = encodeURIComponent(window.location.href);
-      const title = encodeURIComponent(paper.title as string);
-      
-      // Open a simple share menu via mailto + social links
-      const shareUrl = `https://twitter.com/intent/tweet?text=${title}&url=${url}`;
-      window.open(shareUrl, "_blank", "width=550,height=420");
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${paper.title}\n${paper.description}\n${window.location.href}`);
+        toast.success("Link copied to clipboard!");
+      } catch {
+        toast.error("Sharing not supported in this browser");
+      }
     }
   };
 
   const handleDownload = (paper: DBRecord) => {
-    if (paper.pdf) {
-      const blobUrl = getBlobUrl(paper.pdf as string);
+    const pdfSrc = paper.pdf || paper.file;
+    if (pdfSrc) {
+      const blobUrl = getBlobUrl(pdfSrc as string);
       if (blobUrl) {
         const a = document.createElement("a");
         a.href = blobUrl;
@@ -117,19 +120,21 @@ export default function PapersPage() {
   const handleEmail = (paper: DBRecord) => {
     const subject = encodeURIComponent(`Regarding: ${paper.title}`);
     let body = `Hi,\n\nI'd like to discuss the paper: "${paper.title}"\n\n${paper.description}\n\nView: ${window.location.href}`;
-    if (paper.pdf) body += `\n\n[PDF attached via download link]`;
+    if (paper.pdf || paper.file) body += `\n\n[PDF attached via download link]`;
     window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
   };
 
-  // Get nudge + zoom style
   const getImageStyle = (paper: DBRecord) => {
-    if (!paper.imageNudge) return undefined;
-    const parts = (paper.imageNudge as string).split(",").map(Number);
+    const nudge = paper.imageNudge || paper.previewImageNudge;
+    if (!nudge) return undefined;
+    const parts = (nudge as string).split(",").map(Number);
     return {
       objectPosition: `${50 + (parts[0] || 0)}% ${50 + (parts[1] || 0)}%`,
       transform: `scale(${parts[2] || 1})`,
     };
   };
+
+  const getDisplayImage = (paper: DBRecord) => paper.previewImage || paper.image;
 
   return (
     <div>
@@ -153,11 +158,11 @@ export default function PapersPage() {
             variants={cardVariant}
             className="glass-card overflow-hidden hover-glass"
           >
-            {/* Paper image */}
-            <div className="relative w-full h-48 md:h-56 overflow-hidden">
-              {paper.image ? (
+            {/* Paper image with overlay buttons */}
+            <div className="relative w-full overflow-hidden" style={{ height: customization.imageHeight || 224 }}>
+              {getDisplayImage(paper) ? (
                 <img
-                  src={paper.image as string}
+                  src={getDisplayImage(paper) as string}
                   alt={paper.title as string}
                   className="w-full h-full object-cover"
                   style={getImageStyle(paper)}
@@ -167,21 +172,36 @@ export default function PapersPage() {
                   <ImageIcon className="w-12 h-12 text-primary/20" />
                 </div>
               )}
-              {/* Action buttons overlaid on image */}
+              {/* Overlay action buttons - Download, Share, Email */}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
-                <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDownload(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  onClick={() => handleDownload(paper)}
+                  className="w-9 h-9 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  title="Download"
+                >
                   <Download className="w-4 h-4" />
                 </motion.button>
-                <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleShare(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  onClick={() => handleShare(paper)}
+                  className="w-9 h-9 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  title="Share"
+                >
                   <Share2 className="w-4 h-4" />
                 </motion.button>
-                <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleEmail(paper)} className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
-                  <FileText className="w-4 h-4" />
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  onClick={() => handleEmail(paper)}
+                  className="w-9 h-9 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  title="Email"
+                >
+                  <Mail className="w-4 h-4" />
                 </motion.button>
               </div>
             </div>
 
-            <div className="p-6">
+            <div style={{ padding: customization.cardPadding || 24 }}>
               <h3 className="font-heading font-bold text-foreground mb-2">{paper.title}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">{paper.description}</p>
 
@@ -191,7 +211,7 @@ export default function PapersPage() {
                   View Publication
                 </a>
 
-                {paper.pdf && (
+                {(paper.pdf || paper.file) && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

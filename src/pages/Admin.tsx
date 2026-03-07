@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
-import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette } from "lucide-react";
+import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette, Type } from "lucide-react";
 
 const contentTables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 const homeTables: (keyof Database)[] = ["homeProfile", "homeAbout", "homeSkills", "homeLinks", "homeCollege"];
@@ -13,7 +13,7 @@ const homeTableLabels: Record<string, string> = {
   homeCollege: "College Slides",
 };
 
-type AdminTab = "Home" | "Stats" | "Customize" | "Colours" | keyof Database;
+type AdminTab = "Home" | "Stats" | "Customize" | "Colours" | "Fonts" | keyof Database;
 
 const isFileField = (key: string) => {
   const lower = key.toLowerCase();
@@ -22,16 +22,102 @@ const isFileField = (key: string) => {
   );
 };
 
-// Professional color palettes
-const colorPalettes = [
-  { name: "Ocean Night (Current)", colors: { background: "225 45% 8%", foreground: "210 20% 92%", primary: "230 80% 62%", secondary: "225 35% 16%", accent: "240 70% 55%", muted: "225 30% 18%", card: "225 40% 12%", border: "225 35% 20%" } },
-  { name: "Emerald Dark", colors: { background: "160 40% 6%", foreground: "160 15% 92%", primary: "160 70% 45%", secondary: "160 30% 14%", accent: "140 60% 40%", muted: "160 25% 16%", card: "160 35% 10%", border: "160 30% 18%" } },
-  { name: "Rose Noir", colors: { background: "340 35% 7%", foreground: "340 15% 92%", primary: "340 75% 55%", secondary: "340 30% 14%", accent: "320 65% 50%", muted: "340 25% 16%", card: "340 35% 10%", border: "340 30% 18%" } },
-  { name: "Amber Dusk", colors: { background: "30 35% 7%", foreground: "35 20% 92%", primary: "35 85% 55%", secondary: "30 30% 14%", accent: "25 75% 50%", muted: "30 25% 16%", card: "30 35% 10%", border: "30 30% 18%" } },
-  { name: "Violet Storm", colors: { background: "270 40% 7%", foreground: "270 15% 92%", primary: "270 75% 60%", secondary: "270 30% 14%", accent: "280 65% 55%", muted: "270 25% 16%", card: "270 35% 10%", border: "270 30% 18%" } },
-  { name: "Slate Minimal", colors: { background: "220 20% 10%", foreground: "220 10% 90%", primary: "220 50% 55%", secondary: "220 15% 16%", accent: "220 40% 50%", muted: "220 12% 18%", card: "220 18% 13%", border: "220 15% 22%" } },
-  { name: "Crimson Pro", colors: { background: "0 30% 7%", foreground: "0 10% 92%", primary: "0 70% 50%", secondary: "0 25% 14%", accent: "15 65% 50%", muted: "0 20% 16%", card: "0 28% 10%", border: "0 25% 18%" } },
-  { name: "Teal Matrix", colors: { background: "180 35% 6%", foreground: "180 15% 92%", primary: "180 70% 42%", secondary: "180 28% 13%", accent: "170 60% 38%", muted: "180 22% 15%", card: "180 32% 9%", border: "180 28% 17%" } },
+// Generate 100+ professional dark color palettes
+const generatePalettes = () => {
+  const palettes: { name: string; colors: Record<string, string> }[] = [];
+  
+  const themes: { name: string; hue: number; sat: number }[] = [
+    // Blues
+    { name: "Ocean Night", hue: 225, sat: 45 }, { name: "Deep Navy", hue: 230, sat: 50 }, { name: "Arctic Blue", hue: 210, sat: 40 },
+    { name: "Steel Blue", hue: 215, sat: 35 }, { name: "Royal Blue", hue: 240, sat: 55 }, { name: "Midnight Blue", hue: 235, sat: 48 },
+    { name: "Cobalt", hue: 220, sat: 52 }, { name: "Sapphire", hue: 228, sat: 58 }, { name: "Navy Storm", hue: 232, sat: 42 },
+    { name: "Ice Blue", hue: 200, sat: 38 },
+    // Greens
+    { name: "Emerald Dark", hue: 160, sat: 40 }, { name: "Forest Green", hue: 145, sat: 35 }, { name: "Jade", hue: 155, sat: 42 },
+    { name: "Mint Night", hue: 165, sat: 38 }, { name: "Pine Green", hue: 150, sat: 45 }, { name: "Sage Dark", hue: 140, sat: 30 },
+    { name: "Sea Green", hue: 170, sat: 40 }, { name: "Olive Night", hue: 90, sat: 25 }, { name: "Moss", hue: 120, sat: 28 },
+    { name: "Fern", hue: 135, sat: 32 },
+    // Reds & Pinks
+    { name: "Rose Noir", hue: 340, sat: 35 }, { name: "Crimson Pro", hue: 0, sat: 30 }, { name: "Ruby Dark", hue: 350, sat: 40 },
+    { name: "Cherry Night", hue: 345, sat: 38 }, { name: "Burgundy", hue: 335, sat: 32 }, { name: "Wine", hue: 330, sat: 28 },
+    { name: "Coral Night", hue: 15, sat: 35 }, { name: "Magenta Dark", hue: 320, sat: 40 }, { name: "Blush Noir", hue: 355, sat: 25 },
+    { name: "Scarlet", hue: 5, sat: 38 },
+    // Oranges & Ambers
+    { name: "Amber Dusk", hue: 30, sat: 35 }, { name: "Sunset", hue: 25, sat: 40 }, { name: "Burnt Orange", hue: 20, sat: 38 },
+    { name: "Gold Rush", hue: 45, sat: 42 }, { name: "Copper", hue: 28, sat: 35 }, { name: "Tangerine Night", hue: 18, sat: 40 },
+    { name: "Bronze", hue: 35, sat: 30 }, { name: "Caramel", hue: 32, sat: 28 }, { name: "Honey", hue: 40, sat: 36 },
+    { name: "Peach Dark", hue: 22, sat: 32 },
+    // Purples & Violets
+    { name: "Violet Storm", hue: 270, sat: 40 }, { name: "Grape", hue: 280, sat: 35 }, { name: "Plum", hue: 290, sat: 30 },
+    { name: "Lavender Night", hue: 260, sat: 38 }, { name: "Indigo", hue: 250, sat: 45 }, { name: "Amethyst", hue: 275, sat: 42 },
+    { name: "Orchid Dark", hue: 295, sat: 35 }, { name: "Mauve", hue: 285, sat: 28 }, { name: "Heather", hue: 265, sat: 32 },
+    { name: "Iris", hue: 255, sat: 40 },
+    // Teals & Cyans
+    { name: "Teal Matrix", hue: 180, sat: 35 }, { name: "Cyan Dark", hue: 185, sat: 40 }, { name: "Turquoise Night", hue: 175, sat: 38 },
+    { name: "Aqua", hue: 190, sat: 42 }, { name: "Petrol", hue: 195, sat: 35 }, { name: "Ocean Teal", hue: 172, sat: 36 },
+    { name: "Deep Cyan", hue: 188, sat: 44 }, { name: "Lagoon", hue: 178, sat: 38 }, { name: "Seafoam Dark", hue: 168, sat: 30 },
+    { name: "Glacier", hue: 192, sat: 32 },
+    // Neutrals & Grays
+    { name: "Slate Minimal", hue: 220, sat: 20 }, { name: "Charcoal", hue: 210, sat: 15 }, { name: "Graphite", hue: 200, sat: 12 },
+    { name: "Obsidian", hue: 230, sat: 18 }, { name: "Onyx", hue: 0, sat: 5 }, { name: "Pewter", hue: 215, sat: 10 },
+    { name: "Storm Gray", hue: 225, sat: 14 }, { name: "Smoke", hue: 205, sat: 8 }, { name: "Iron", hue: 210, sat: 10 },
+    { name: "Ash", hue: 195, sat: 6 },
+    // Warm tones
+    { name: "Warm Earth", hue: 25, sat: 25 }, { name: "Terra Cotta", hue: 15, sat: 30 }, { name: "Sienna", hue: 20, sat: 28 },
+    { name: "Clay", hue: 18, sat: 22 }, { name: "Sandstone Night", hue: 38, sat: 20 }, { name: "Mocha", hue: 30, sat: 18 },
+    { name: "Espresso", hue: 25, sat: 20 }, { name: "Cinnamon", hue: 15, sat: 25 }, { name: "Walnut", hue: 22, sat: 15 },
+    { name: "Umber", hue: 28, sat: 22 },
+    // Specialty
+    { name: "Neon Blue", hue: 220, sat: 70 }, { name: "Neon Green", hue: 150, sat: 70 }, { name: "Neon Pink", hue: 330, sat: 70 },
+    { name: "Neon Purple", hue: 270, sat: 70 }, { name: "Neon Cyan", hue: 185, sat: 70 }, { name: "Neon Orange", hue: 25, sat: 70 },
+    { name: "Sunset Beach", hue: 20, sat: 45 }, { name: "Summer Ocean", hue: 200, sat: 50 }, { name: "Black & Gold", hue: 45, sat: 55 },
+    { name: "Cool Coastal", hue: 195, sat: 45 },
+  ];
+
+  themes.forEach(({ name, hue, sat }) => {
+    const priSat = Math.min(85, sat + 35);
+    palettes.push({
+      name,
+      colors: {
+        background: `${hue} ${sat}% 8%`,
+        foreground: `${hue} ${Math.max(10, sat - 25)}% 92%`,
+        primary: `${hue} ${priSat}% ${sat > 50 ? 58 : 55}%`,
+        secondary: `${hue} ${Math.max(15, sat - 10)}% 16%`,
+        accent: `${(hue + 20) % 360} ${Math.min(75, priSat - 5)}% 50%`,
+        muted: `${hue} ${Math.max(12, sat - 15)}% 18%`,
+        card: `${hue} ${Math.max(15, sat - 5)}% 12%`,
+        border: `${hue} ${Math.max(15, sat - 10)}% 20%`,
+      },
+    });
+  });
+
+  return palettes;
+};
+
+const colorPalettes = generatePalettes();
+
+// Popular Google Fonts
+const googleFonts = [
+  "Inter", "Poppins", "Roboto", "Open Sans", "Lato", "Montserrat", "Raleway", "Nunito",
+  "Source Sans Pro", "Ubuntu", "Playfair Display", "Merriweather", "Oswald", "PT Sans",
+  "Noto Sans", "Quicksand", "Work Sans", "Rubik", "Karla", "Mulish",
+  "Fira Sans", "Barlow", "DM Sans", "Manrope", "Space Grotesk",
+  "IBM Plex Sans", "Cabin", "Exo 2", "Outfit", "Plus Jakarta Sans",
+  "Sora", "Lexend", "Albert Sans", "Figtree", "Geist",
+  "Josefin Sans", "Comfortaa", "Overpass", "Archivo", "Titillium Web",
+  "Urbanist", "Red Hat Display", "Jost", "Nunito Sans", "Hind",
+  "Crimson Pro", "Libre Baskerville", "Lora", "EB Garamond", "Cormorant Garamond",
+  "Spectral", "Bitter", "Noto Serif", "Domine", "Vollkorn",
+  "PT Serif", "Zilla Slab", "Cardo", "Gelasio", "Literata",
+  "Abril Fatface", "Bebas Neue", "Anton", "Fjalla One", "Black Ops One",
+  "Permanent Marker", "Alfa Slab One", "Righteous", "Bungee", "Monoton",
+  "Pacifico", "Dancing Script", "Satisfy", "Great Vibes", "Sacramento",
+  "Lobster", "Caveat", "Kalam", "Indie Flower", "Patrick Hand",
+  "Architects Daughter", "Shadows Into Light", "Amatic SC", "Handlee", "Reenie Beanie",
+  "Courier Prime", "JetBrains Mono", "Fira Code", "Source Code Pro", "IBM Plex Mono",
+  "Roboto Mono", "Space Mono", "Ubuntu Mono", "Anonymous Pro", "Inconsolata",
+  "Abel", "Acme", "Actor", "Adamina", "Advent Pro",
+  "ABeeZee", "Abhaya Libre", "Antic", "Asap", "Assistant",
 ];
 
 export default function AdminPage() {
@@ -49,17 +135,16 @@ export default function AdminPage() {
   const [expandedHomeSections, setExpandedHomeSections] = useState<Record<string, boolean>>({
     homeProfile: true, homeAbout: true, homeSkills: true, homeLinks: true, homeCollege: false,
   });
-  // Nudge offsets + zoom: stored as "x,y" and zoom separately
   const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number; zoom: number }>>({});
 
   const refresh = () => {
-    if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours") {
+    if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts") {
       setRecords(getAllRecords(activeTable));
     }
   };
 
   useEffect(() => {
-    if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours") refresh();
+    if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts") refresh();
   }, [activeTable, authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -276,17 +361,13 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Position & Scale Controls - for ALL images */}
             {isImage && (
               <div className="flex flex-col items-center gap-1">
                 <p className="text-[10px] text-muted-foreground/50 mb-1">Position & Scale</p>
                 <div className="flex items-center gap-4">
-                  {/* Zoom out */}
                   <button type="button" onClick={() => zoom(field, "out")} className="w-8 h-8 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                     <ZoomOut className="w-3.5 h-3.5" />
                   </button>
-
-                  {/* Direction pad */}
                   <div className="flex flex-col items-center gap-0.5">
                     <button type="button" onClick={() => nudge(field, "up")} className="w-7 h-7 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                       <ArrowUp className="w-3.5 h-3.5" />
@@ -306,8 +387,6 @@ export default function AdminPage() {
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
                   </div>
-
-                  {/* Zoom in */}
                   <button type="button" onClick={() => zoom(field, "in")} className="w-8 h-8 rounded-full bg-secondary/80 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                     <ZoomIn className="w-3.5 h-3.5" />
                   </button>
@@ -531,11 +610,13 @@ export default function AdminPage() {
     );
   };
 
-  // Customization tab - box sizes per page - ALL pages with height + padding
+  // Customization tab with LIVE updates
   const CustomizeTab = () => {
-    const raw = localStorage.getItem("portfolio_customizations");
     const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>(() => {
-      try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+      try {
+        const raw = localStorage.getItem("portfolio_customizations");
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
     });
 
     const pages = [
@@ -572,11 +653,14 @@ export default function AdminPage() {
       const next = { ...customizations, [page]: { ...customizations[page], [box]: val } };
       setCustomizations(next);
       localStorage.setItem("portfolio_customizations", JSON.stringify(next));
+      // Dispatch storage event for same-tab listeners
+      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: JSON.stringify(next) }));
     };
 
     const resetAll = () => {
       setCustomizations({});
       localStorage.removeItem("portfolio_customizations");
+      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: "{}" }));
     };
 
     return (
@@ -585,7 +669,7 @@ export default function AdminPage() {
           <h3 className="font-heading font-semibold text-foreground">Box Size Customization</h3>
           <button onClick={resetAll} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">Reset All</button>
         </div>
-        <p className="text-muted-foreground text-xs mb-4">Adjust image box sizes and padding for each page.</p>
+        <p className="text-muted-foreground text-xs mb-4">Adjust image box sizes and padding for each page. Changes apply live.</p>
 
         {pages.map(page => (
           <div key={page.key} className="glass-card p-4 space-y-3">
@@ -620,7 +704,7 @@ export default function AdminPage() {
     );
   };
 
-  // Colours tab - theme editor
+  // Colours tab - 100+ palettes with full preview
   const ColoursTab = () => {
     const [customTheme, setCustomTheme] = useState<Record<string, string>>(() => {
       try {
@@ -629,6 +713,8 @@ export default function AdminPage() {
       } catch { return {}; }
     });
     const [activePalette, setActivePalette] = useState<string>("");
+    const [previewPalette, setPreviewPalette] = useState<typeof colorPalettes[0] | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const themeKeys = [
       { key: "background", label: "Background" },
@@ -641,67 +727,139 @@ export default function AdminPage() {
       { key: "border", label: "Border" },
     ];
 
-    const applyPalette = (palette: typeof colorPalettes[0]) => {
-      setCustomTheme(palette.colors);
-      setActivePalette(palette.name);
-      localStorage.setItem("portfolio_theme", JSON.stringify(palette.colors));
-      applyThemeToDOM(palette.colors);
-    };
-
     const applyThemeToDOM = (colors: Record<string, string>) => {
       const root = document.documentElement;
       Object.entries(colors).forEach(([key, val]) => {
         root.style.setProperty(`--${key}`, val);
       });
+      // Also update derived variables
+      if (colors.card) {
+        root.style.setProperty("--glass-bg", colors.card);
+        root.style.setProperty("--popover", colors.card);
+      }
+      if (colors.border) root.style.setProperty("--glass-border", colors.border);
+      if (colors.primary) {
+        root.style.setProperty("--glow-color", colors.primary);
+        root.style.setProperty("--ring", colors.primary);
+        root.style.setProperty("--sidebar-primary", colors.primary);
+      }
+      if (colors.foreground) {
+        root.style.setProperty("--card-foreground", colors.foreground);
+        root.style.setProperty("--popover-foreground", colors.foreground);
+        root.style.setProperty("--sidebar-foreground", colors.foreground);
+      }
+      if (colors.secondary) root.style.setProperty("--input", colors.secondary);
+      if (colors.background) {
+        root.style.setProperty("--sidebar-background", colors.background);
+        // Update body gradient
+        document.body.style.background = `linear-gradient(135deg, hsl(${colors.background}) 0%, hsl(${colors.card || colors.background}) 100%)`;
+      }
+    };
+
+    const applyPalette = (palette: typeof colorPalettes[0]) => {
+      setCustomTheme(palette.colors);
+      setActivePalette(palette.name);
+      setPreviewPalette(null);
+      localStorage.setItem("portfolio_theme", JSON.stringify(palette.colors));
+      applyThemeToDOM(palette.colors);
+    };
+
+    const previewTheme = (palette: typeof colorPalettes[0]) => {
+      setPreviewPalette(palette);
+      applyThemeToDOM(palette.colors);
+    };
+
+    const cancelPreview = () => {
+      if (previewPalette) {
+        setPreviewPalette(null);
+        if (Object.keys(customTheme).length > 0) {
+          applyThemeToDOM(customTheme);
+          document.body.style.background = `linear-gradient(135deg, hsl(${customTheme.background}) 0%, hsl(${customTheme.card || customTheme.background}) 100%)`;
+        } else {
+          // Reset to defaults
+          const root = document.documentElement;
+          themeKeys.forEach(({ key }) => root.style.removeProperty(`--${key}`));
+          root.style.removeProperty("--glass-bg");
+          root.style.removeProperty("--glass-border");
+          root.style.removeProperty("--glow-color");
+          document.body.style.background = "";
+        }
+      }
     };
 
     const resetTheme = () => {
       setCustomTheme({});
       setActivePalette("");
+      setPreviewPalette(null);
       localStorage.removeItem("portfolio_theme");
       const root = document.documentElement;
-      themeKeys.forEach(({ key }) => root.style.removeProperty(`--${key}`));
+      [...themeKeys.map(t => t.key), "glass-bg", "glass-border", "glow-color", "ring", "card-foreground", "popover", "popover-foreground", "sidebar-background", "sidebar-foreground", "sidebar-primary", "input"].forEach(key => root.style.removeProperty(`--${key}`));
+      document.body.style.background = "";
     };
 
     const updateSingleColor = (key: string, value: string) => {
       const next = { ...customTheme, [key]: value };
       setCustomTheme(next);
       localStorage.setItem("portfolio_theme", JSON.stringify(next));
-      document.documentElement.style.setProperty(`--${key}`, value);
+      applyThemeToDOM(next);
     };
 
-    // Apply saved theme on mount
     useEffect(() => {
       if (Object.keys(customTheme).length > 0) {
         applyThemeToDOM(customTheme);
       }
     }, []);
 
+    const filteredPalettes = searchQuery
+      ? colorPalettes.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      : colorPalettes;
+
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
             <Palette className="w-5 h-5 text-primary" />
-            Theme Colours
+            Theme Colours ({colorPalettes.length} palettes)
           </h3>
           <button onClick={resetTheme} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">Reset to Default</button>
         </div>
-        <p className="text-muted-foreground text-xs mb-4">Choose a professional palette or customize individual colors.</p>
+        <p className="text-muted-foreground text-xs mb-2">Hover to preview, click to apply. Changes affect entire website including backgrounds.</p>
+
+        {/* Search */}
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search palettes... (e.g. ocean, emerald, neon)"
+          className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary mb-3"
+        />
+
+        {/* Preview banner */}
+        {previewPalette && (
+          <div className="glass-card p-3 border border-primary/40 flex items-center justify-between">
+            <p className="text-xs text-foreground">Previewing: <span className="text-primary font-bold">{previewPalette.name}</span></p>
+            <div className="flex gap-2">
+              <button onClick={() => applyPalette(previewPalette)} className="px-3 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Apply</button>
+              <button onClick={cancelPreview} className="px-3 py-1 rounded-lg glass-pill text-muted-foreground text-xs">Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Palette grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {colorPalettes.map((palette) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[500px] overflow-y-auto pr-1">
+          {filteredPalettes.map((palette) => (
             <button
               key={palette.name}
               onClick={() => applyPalette(palette)}
-              className={`glass-card p-3 text-left transition-all hover:border-primary/40 ${activePalette === palette.name ? "border-primary/60 ring-1 ring-primary/30" : ""}`}
+              onMouseEnter={() => previewTheme(palette)}
+              onMouseLeave={() => cancelPreview()}
+              className={`glass-card p-2.5 text-left transition-all hover:border-primary/40 ${activePalette === palette.name ? "border-primary/60 ring-1 ring-primary/30" : ""}`}
             >
-              <div className="flex gap-1 mb-2">
-                {["primary", "accent", "background", "foreground"].map(k => (
-                  <div key={k} className="w-4 h-4 rounded-full border border-border/30" style={{ background: `hsl(${palette.colors[k]})` }} />
+              <div className="flex gap-0.5 mb-1.5">
+                {["background", "card", "primary", "accent"].map(k => (
+                  <div key={k} className="flex-1 h-5 rounded-sm border border-border/20" style={{ background: `hsl(${palette.colors[k]})` }} />
                 ))}
               </div>
-              <p className="text-[10px] text-foreground font-medium">{palette.name}</p>
+              <p className="text-[9px] text-foreground font-medium truncate">{palette.name}</p>
             </button>
           ))}
         </div>
@@ -709,6 +867,7 @@ export default function AdminPage() {
         {/* Individual color editors */}
         <div className="glass-card p-4 space-y-3 mt-4">
           <h4 className="font-heading font-semibold text-foreground text-sm">Custom Colors (HSL)</h4>
+          <p className="text-muted-foreground text-[10px]">Format: hue saturation% lightness% (e.g. 230 80% 62%)</p>
           {themeKeys.map(({ key, label }) => {
             const currentVal = customTheme[key] || "";
             return (
@@ -729,9 +888,82 @@ export default function AdminPage() {
     );
   };
 
+  // Fonts tab
+  const FontsTab = () => {
+    const [activeFont, setActiveFont] = useState(() => localStorage.getItem("portfolio_font") || "Inter, Poppins, sans-serif");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set(["Inter", "Poppins"]));
+
+    const loadFont = (fontName: string) => {
+      if (loadedFonts.has(fontName)) return;
+      const link = document.createElement("link");
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+      setLoadedFonts(prev => new Set([...prev, fontName]));
+    };
+
+    const applyFont = (fontName: string) => {
+      loadFont(fontName);
+      const fontValue = `"${fontName}", sans-serif`;
+      setActiveFont(fontValue);
+      localStorage.setItem("portfolio_font", fontValue);
+      document.documentElement.style.setProperty("--font-family", fontValue);
+      document.body.style.fontFamily = fontValue;
+    };
+
+    const resetFont = () => {
+      setActiveFont("Inter, Poppins, sans-serif");
+      localStorage.removeItem("portfolio_font");
+      document.documentElement.style.removeProperty("--font-family");
+      document.body.style.fontFamily = "";
+    };
+
+    const filteredFonts = searchQuery
+      ? googleFonts.filter(f => f.toLowerCase().includes(searchQuery.toLowerCase()))
+      : googleFonts;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+            <Type className="w-5 h-5 text-primary" />
+            Font Selection ({googleFonts.length} fonts)
+          </h3>
+          <button onClick={resetFont} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">Reset to Default</button>
+        </div>
+        <p className="text-muted-foreground text-xs">Current: <span className="text-primary font-medium">{activeFont}</span></p>
+
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search fonts..."
+          className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground text-xs focus:outline-none focus:border-primary"
+        />
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[600px] overflow-y-auto pr-1">
+          {filteredFonts.map((font) => {
+            const isActive = activeFont.includes(font);
+            return (
+              <button
+                key={font}
+                onClick={() => applyFont(font)}
+                onMouseEnter={() => loadFont(font)}
+                className={`glass-card p-3 text-left transition-all hover:border-primary/40 ${isActive ? "border-primary/60 ring-1 ring-primary/30" : ""}`}
+              >
+                <p className="text-foreground text-sm mb-1 truncate" style={{ fontFamily: `"${font}", sans-serif` }}>{font}</p>
+                <p className="text-muted-foreground text-[10px]" style={{ fontFamily: `"${font}", sans-serif` }}>Aa Bb Cc 123</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, hsl(225, 45%, 8%) 0%, hsl(228, 40%, 12%) 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%)" }}>
         <div className="glass-card p-8 w-full max-w-sm">
           <h1 className="font-heading font-bold text-primary text-xl mb-6 text-center">Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -758,10 +990,11 @@ export default function AdminPage() {
     { label: "Settings", value: "settings" as AdminTab },
     { label: "🎨 Customize", value: "Customize" },
     { label: "🎨 Colours", value: "Colours" },
+    { label: "🔤 Fonts", value: "Fonts" },
   ];
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "linear-gradient(135deg, hsl(225, 45%, 8%) 0%, hsl(228, 40%, 12%) 100%)" }}>
+    <div className="min-h-screen p-6" style={{ background: "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%)" }}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-heading font-bold text-primary text-2xl">Admin Panel</h1>
@@ -775,7 +1008,7 @@ export default function AdminPage() {
               key={tab.value}
               onClick={() => {
                 setActiveTab(tab.value);
-                if (tab.value !== "Home" && tab.value !== "Stats" && tab.value !== "Customize" && tab.value !== "Colours") setActiveTable(tab.value as keyof Database);
+                if (tab.value !== "Home" && tab.value !== "Stats" && tab.value !== "Customize" && tab.value !== "Colours" && tab.value !== "Fonts") setActiveTable(tab.value as keyof Database);
                 setEditingId(null);
                 setNewRecord(false);
               }}
@@ -793,6 +1026,7 @@ export default function AdminPage() {
         {activeTab === "Stats" && <DownloadStats />}
         {activeTab === "Customize" && <CustomizeTab />}
         {activeTab === "Colours" && <ColoursTab />}
+        {activeTab === "Fonts" && <FontsTab />}
         {activeTab === "settings" && <SettingsTab />}
 
         {activeTab === "Home" && (
@@ -852,7 +1086,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && activeTab !== "Customize" && activeTab !== "Colours" && (
+        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && (
           <>
             <button onClick={() => startAdd()} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 
