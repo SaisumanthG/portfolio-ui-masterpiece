@@ -138,13 +138,13 @@ export default function AdminPage() {
   const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number; zoom: number }>>({});
 
   const refresh = () => {
-    if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts") {
+    if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") {
       setRecords(getAllRecords(activeTable));
     }
   };
 
   useEffect(() => {
-    if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts") refresh();
+    if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") refresh();
   }, [activeTable, authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
