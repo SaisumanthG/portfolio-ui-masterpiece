@@ -4,11 +4,15 @@ import { useEffect, useState, useCallback } from "react";
 import { getAllRecords, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
+import ShareFallbackDialog from "@/components/ShareFallbackDialog";
+import { tryNativeShare, type SharePayload } from "@/lib/share";
 
 const cardVariant = {
   hidden: { opacity: 0, y: 40, scale: 0.95 },
   visible: (i: number) => ({
-    opacity: 1, y: 0, scale: 1,
+    opacity: 1,
+    y: 0,
+    scale: 1,
     transition: { delay: i * 0.12, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   }),
 };
@@ -29,6 +33,8 @@ export default function PapersPage() {
   const [papers, setPapers] = useState<DBRecord[]>([]);
   const [viewPaper, setViewPaper] = useState<DBRecord | null>(null);
   const [viewBlobUrl, setViewBlobUrl] = useState<string | null>(null);
+  const [fallbackShare, setFallbackShare] = useState<SharePayload | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
   const customization = useCustomization("papers");
 
   useEffect(() => {
@@ -45,92 +51,97 @@ export default function PapersPage() {
       for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
       const blob = new Blob([ab], { type: mime });
       return URL.createObjectURL(blob);
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }, []);
 
+  const getDownloadSource = (paper: DBRecord) => (paper.file || paper.pdf) as string;
+
   const openViewPaper = (paper: DBRecord) => {
-    if (viewBlobUrl) URL.revokeObjectURL(viewBlobUrl);
-    const pdfSrc = paper.pdf || paper.file;
-    const url = pdfSrc ? getBlobUrl(pdfSrc as string) : null;
-    setViewBlobUrl(url);
+    if (viewBlobUrl?.startsWith("blob:")) URL.revokeObjectURL(viewBlobUrl);
+    const pdfSrc = getDownloadSource(paper);
+    if (pdfSrc?.startsWith("data:")) {
+      const url = getBlobUrl(pdfSrc);
+      setViewBlobUrl(url);
+    } else {
+      setViewBlobUrl(pdfSrc || null);
+    }
     setViewPaper(paper);
   };
 
   const closeViewPaper = () => {
     setViewPaper(null);
-    if (viewBlobUrl) URL.revokeObjectURL(viewBlobUrl);
+    if (viewBlobUrl?.startsWith("blob:")) URL.revokeObjectURL(viewBlobUrl);
     setViewBlobUrl(null);
   };
 
   const handleShare = async (paper: DBRecord) => {
-    const shareData: ShareData = {
+    const payload: SharePayload = {
       title: paper.title as string,
       text: paper.description as string,
-      url: paper.publicationUrl as string || window.location.href,
+      url: (paper.publicationUrl as string) || window.location.href,
+      dataUrl: getDownloadSource(paper),
+      fileName: `${paper.title}.pdf`,
     };
-    try {
-      if (navigator.share) {
-        const pdfSrc = paper.pdf || paper.file;
-        if (pdfSrc) {
-          try {
-            const blobUrl = getBlobUrl(pdfSrc as string);
-            if (blobUrl) {
-              const resp = await fetch(blobUrl);
-              const blob = await resp.blob();
-              const file = new File([blob], `${paper.title}.pdf`, { type: "application/pdf" });
-              URL.revokeObjectURL(blobUrl);
-              if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({ ...shareData, files: [file] });
-                return;
-              }
-            }
-          } catch { /* fall through */ }
-        }
-        await navigator.share(shareData);
-      } else {
-        const text = `${paper.title}\n${paper.description}\n${paper.publicationUrl || window.location.href}`;
-        await navigator.clipboard.writeText(text);
-        toast.success("Copied to clipboard!");
-      }
-    } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        try {
-          await navigator.clipboard.writeText(`${paper.title}\n${paper.publicationUrl || window.location.href}`);
-          toast.success("Copied to clipboard!");
-        } catch {
-          toast.error("Sharing not supported");
-        }
-      }
+
+    const result = await tryNativeShare(payload);
+    if (result === "unavailable") {
+      setFallbackShare(payload);
+      setFallbackOpen(true);
     }
   };
 
   const handleDownload = (paper: DBRecord) => {
-    const pdfSrc = paper.pdf || paper.file;
-    if (pdfSrc) {
-      const blobUrl = getBlobUrl(pdfSrc as string);
-      if (blobUrl) {
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = `${paper.title}.pdf`;
-        a.click();
-        URL.revokeObjectURL(blobUrl);
-        trackDownload(paper.id, paper.title as string);
-        toast.success("Download started!", { description: `${paper.title}.pdf` });
-      }
-    } else {
+    const pdfSrc = getDownloadSource(paper);
+    if (!pdfSrc) {
       toast.error("No PDF uploaded yet");
+      return;
     }
+
+    let href = pdfSrc;
+    if (pdfSrc.startsWith("data:")) {
+      const blobUrl = getBlobUrl(pdfSrc);
+      if (!blobUrl) {
+        toast.error("Download failed");
+        return;
+      }
+      href = blobUrl;
+    }
+
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = `${paper.title}.pdf`;
+    a.click();
+
+    if (href.startsWith("blob:")) URL.revokeObjectURL(href);
+    trackDownload(paper.id, paper.title as string);
+    toast.success("Download started!", { description: `${paper.title}.pdf` });
   };
 
-  const handleEmail = (paper: DBRecord) => {
+  const handleEmail = async (paper: DBRecord) => {
+    const result = await tryNativeShare({
+      title: `Send: ${paper.title}`,
+      text: "Choose your email app to send this paper",
+      url: (paper.publicationUrl as string) || window.location.href,
+      dataUrl: getDownloadSource(paper),
+      fileName: `${paper.title}.pdf`,
+    });
+
+    if (result === "shared") {
+      toast.success("Select your email app from share options");
+      return;
+    }
+
     const subject = encodeURIComponent(`Regarding: ${paper.title}`);
-    let body = `Hi,\n\nI'd like to discuss the paper: "${paper.title}"\n\n${paper.description}\n\nView: ${window.location.href}`;
-    if (paper.pdf || paper.file) body += `\n\n[PDF attached via download link]`;
+    let body = `Hi,\n\nI'd like to discuss the paper: "${paper.title}"\n\n${paper.description}`;
+    if (paper.publicationUrl) body += `\n\nPublication: ${paper.publicationUrl}`;
+    if (getDownloadSource(paper)) body += `\n\nAttachment note: Please download file from the paper card if your email app does not auto-attach.`;
     window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
   };
 
   const getImageStyle = (paper: DBRecord) => {
-    const nudge = paper.imageNudge || paper.previewImageNudge;
+    const nudge = paper.previewImageNudge || paper.imageNudge;
     if (!nudge) return undefined;
     const parts = (nudge as string).split(",").map(Number);
     return {
@@ -139,7 +150,7 @@ export default function PapersPage() {
     };
   };
 
-  const getDisplayImage = (paper: DBRecord) => paper.previewImage || paper.image;
+  const getDisplayImage = (paper: DBRecord) => (paper.previewImage || paper.image) as string;
 
   return (
     <div>
@@ -163,11 +174,10 @@ export default function PapersPage() {
             variants={cardVariant}
             className="glass-card overflow-hidden hover-glass"
           >
-            {/* Paper image with overlay buttons */}
             <div className="relative w-full overflow-hidden" style={{ height: customization.imageHeight || 224 }}>
               {getDisplayImage(paper) ? (
                 <img
-                  src={getDisplayImage(paper) as string}
+                  src={getDisplayImage(paper)}
                   alt={paper.title as string}
                   className="w-full h-full object-cover"
                   style={getImageStyle(paper)}
@@ -177,7 +187,6 @@ export default function PapersPage() {
                   <ImageIcon className="w-12 h-12 text-primary/20" />
                 </div>
               )}
-              {/* Overlay action buttons - Download, Share, Email */}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -211,12 +220,17 @@ export default function PapersPage() {
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">{paper.description}</p>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <a href={paper.publicationUrl || "#"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary text-sm font-medium hover:underline">
+                <a
+                  href={(paper.publicationUrl as string) || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-primary text-sm font-medium hover:underline"
+                >
                   <ExternalLink className="w-3.5 h-3.5" />
                   View Publication
                 </a>
 
-                {(paper.pdf || paper.file) && (
+                {getDownloadSource(paper) && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -233,7 +247,6 @@ export default function PapersPage() {
         ))}
       </div>
 
-      {/* View Paper Modal - PDF only with close button, no editing */}
       <AnimatePresence>
         {viewPaper && (
           <motion.div
@@ -255,11 +268,7 @@ export default function PapersPage() {
               </button>
               <div className="glass-card p-2 rounded-xl h-full flex flex-col">
                 {viewBlobUrl ? (
-                  <iframe
-                    src={viewBlobUrl + "#toolbar=0&navpanes=0&scrollbar=1&view=FitH"}
-                    className="w-full flex-1 rounded-lg"
-                    title={viewPaper.title as string}
-                  />
+                  <iframe src={viewBlobUrl + "#toolbar=0&navpanes=0&scrollbar=1&view=FitH"} className="w-full flex-1 rounded-lg" title={viewPaper.title as string} />
                 ) : (
                   <div className="w-full flex-1 flex items-center justify-center text-muted-foreground">
                     <FileText className="w-16 h-16 text-muted-foreground/30" />
@@ -280,6 +289,12 @@ export default function PapersPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ShareFallbackDialog
+        open={fallbackOpen}
+        onClose={() => setFallbackOpen(false)}
+        payload={fallbackShare}
+      />
     </div>
   );
 }
