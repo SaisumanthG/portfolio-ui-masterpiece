@@ -961,6 +961,216 @@ export default function AdminPage() {
     );
   };
 
+  // Complete Website Themes - 10 full presets
+  const websiteThemes = [
+    {
+      name: "Default Dark Navy",
+      description: "The original dark navy glassmorphism theme",
+      colors: { background: "225 45% 8%", foreground: "210 20% 92%", primary: "230 80% 62%", secondary: "225 35% 16%", accent: "240 70% 55%", muted: "225 30% 18%", card: "225 40% 12%", border: "225 35% 20%" },
+      font: "Inter, Poppins, sans-serif",
+      radius: "0.75rem",
+    },
+    {
+      name: "Midnight Purple",
+      description: "Deep purple with violet accents, elegant and modern",
+      colors: { background: "270 40% 7%", foreground: "270 15% 92%", primary: "275 75% 60%", secondary: "270 30% 15%", accent: "290 65% 55%", muted: "270 25% 17%", card: "270 35% 11%", border: "270 30% 19%" },
+      font: '"Playfair Display", serif',
+      radius: "1rem",
+    },
+    {
+      name: "Ocean Breeze",
+      description: "Cool teal & cyan tones inspired by the sea",
+      colors: { background: "185 40% 7%", foreground: "185 15% 93%", primary: "185 80% 50%", secondary: "185 30% 14%", accent: "170 70% 48%", muted: "185 25% 16%", card: "185 35% 10%", border: "185 30% 18%" },
+      font: '"DM Sans", sans-serif',
+      radius: "0.5rem",
+    },
+    {
+      name: "Emerald Pro",
+      description: "Professional green palette, nature-inspired",
+      colors: { background: "155 35% 7%", foreground: "155 12% 92%", primary: "155 70% 45%", secondary: "155 28% 14%", accent: "140 60% 42%", muted: "155 22% 16%", card: "155 30% 10%", border: "155 25% 18%" },
+      font: '"Manrope", sans-serif',
+      radius: "0.75rem",
+    },
+    {
+      name: "Rose Gold Dark",
+      description: "Warm rose and gold tones on dark background",
+      colors: { background: "340 30% 7%", foreground: "340 10% 93%", primary: "345 65% 58%", secondary: "340 25% 14%", accent: "25 55% 52%", muted: "340 20% 16%", card: "340 28% 10%", border: "340 22% 18%" },
+      font: '"Crimson Pro", serif',
+      radius: "1rem",
+    },
+    {
+      name: "Neon Cyber",
+      description: "Cyberpunk-inspired with neon cyan accents",
+      colors: { background: "220 50% 5%", foreground: "180 20% 95%", primary: "180 100% 50%", secondary: "220 40% 12%", accent: "300 80% 55%", muted: "220 35% 14%", card: "220 45% 8%", border: "220 40% 16%" },
+      font: '"Space Grotesk", sans-serif',
+      radius: "0.25rem",
+    },
+    {
+      name: "Warm Sunset",
+      description: "Warm amber and orange tones, cozy feel",
+      colors: { background: "25 30% 7%", foreground: "25 10% 93%", primary: "30 80% 55%", secondary: "25 25% 14%", accent: "15 70% 50%", muted: "25 20% 16%", card: "25 28% 10%", border: "25 22% 18%" },
+      font: '"Nunito", sans-serif',
+      radius: "1rem",
+    },
+    {
+      name: "Minimal Slate",
+      description: "Ultra-clean minimal gray palette",
+      colors: { background: "220 15% 8%", foreground: "220 8% 90%", primary: "220 50% 55%", secondary: "220 12% 15%", accent: "220 40% 50%", muted: "220 10% 17%", card: "220 14% 11%", border: "220 12% 19%" },
+      font: '"Work Sans", sans-serif',
+      radius: "0.5rem",
+    },
+    {
+      name: "Royal Indigo",
+      description: "Rich indigo and deep blue, premium feel",
+      colors: { background: "245 45% 7%", foreground: "245 15% 93%", primary: "250 80% 65%", secondary: "245 35% 14%", accent: "260 70% 58%", muted: "245 28% 16%", card: "245 40% 10%", border: "245 32% 18%" },
+      font: '"Outfit", sans-serif',
+      radius: "0.75rem",
+    },
+    {
+      name: "Carbon Black & Gold",
+      description: "Sleek black with gold accents, luxury style",
+      colors: { background: "0 0% 5%", foreground: "0 0% 92%", primary: "45 80% 55%", secondary: "0 0% 12%", accent: "40 70% 50%", muted: "0 0% 15%", card: "0 0% 8%", border: "0 0% 18%" },
+      font: '"Josefin Sans", sans-serif',
+      radius: "0.25rem",
+    },
+  ];
+
+  const ThemesTab = () => {
+    const [previewingTheme, setPreviewingTheme] = useState<typeof websiteThemes[0] | null>(null);
+    const [activeThemeName, setActiveThemeName] = useState(() => localStorage.getItem("portfolio_active_theme") || "Default Dark Navy");
+    const [showPreview, setShowPreview] = useState(false);
+
+    const applyThemeToDOM = (theme: typeof websiteThemes[0]) => {
+      const root = document.documentElement;
+      Object.entries(theme.colors).forEach(([key, val]) => {
+        root.style.setProperty(`--${key}`, val);
+      });
+      if (theme.colors.card) {
+        root.style.setProperty("--glass-bg", theme.colors.card);
+        root.style.setProperty("--popover", theme.colors.card);
+      }
+      if (theme.colors.border) root.style.setProperty("--glass-border", theme.colors.border);
+      if (theme.colors.primary) {
+        root.style.setProperty("--glow-color", theme.colors.primary);
+        root.style.setProperty("--ring", theme.colors.primary);
+        root.style.setProperty("--sidebar-primary", theme.colors.primary);
+      }
+      if (theme.colors.foreground) {
+        root.style.setProperty("--card-foreground", theme.colors.foreground);
+        root.style.setProperty("--popover-foreground", theme.colors.foreground);
+      }
+      if (theme.colors.secondary) root.style.setProperty("--input", theme.colors.secondary);
+      if (theme.colors.background) {
+        root.style.setProperty("--sidebar-background", theme.colors.background);
+        document.body.style.background = `linear-gradient(135deg, hsl(${theme.colors.background}) 0%, hsl(${theme.colors.card}) 100%)`;
+      }
+      root.style.setProperty("--radius", theme.radius);
+      // Font
+      const fontName = theme.font.split(",")[0].replace(/"/g, "").trim();
+      if (!document.querySelector(`link[href*="${fontName.replace(/ /g, "+")}"]`)) {
+        const link = document.createElement("link");
+        link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+      }
+      root.style.setProperty("--font-family", theme.font);
+      document.body.style.fontFamily = theme.font;
+    };
+
+    const applyTheme = (theme: typeof websiteThemes[0]) => {
+      applyThemeToDOM(theme);
+      setActiveThemeName(theme.name);
+      setPreviewingTheme(null);
+      setShowPreview(false);
+      localStorage.setItem("portfolio_theme", JSON.stringify(theme.colors));
+      localStorage.setItem("portfolio_font", theme.font);
+      localStorage.setItem("portfolio_active_theme", theme.name);
+    };
+
+    const previewTheme = (theme: typeof websiteThemes[0]) => {
+      setPreviewingTheme(theme);
+      setShowPreview(true);
+      applyThemeToDOM(theme);
+    };
+
+    const cancelPreview = () => {
+      if (previewingTheme) {
+        setShowPreview(false);
+        setPreviewingTheme(null);
+        // Restore active theme
+        const active = websiteThemes.find(t => t.name === activeThemeName);
+        if (active) applyThemeToDOM(active);
+        else {
+          // Restore from localStorage
+          try {
+            const saved = localStorage.getItem("portfolio_theme");
+            if (saved) {
+              const colors = JSON.parse(saved);
+              Object.entries(colors).forEach(([key, val]) => {
+                document.documentElement.style.setProperty(`--${key}`, val as string);
+              });
+            }
+          } catch {}
+        }
+      }
+    };
+
+    const resetToDefault = () => {
+      const defaultTheme = websiteThemes[0];
+      applyTheme(defaultTheme);
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+            🎭 Website Themes ({websiteThemes.length} presets)
+          </h3>
+          <button onClick={resetToDefault} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs hover:bg-destructive/20 transition-colors">Reset to Default</button>
+        </div>
+        <p className="text-muted-foreground text-xs mb-4">Complete theme presets that change colors, fonts, and border radius across the entire website. Click to preview, then apply.</p>
+        <p className="text-xs text-primary/70">Active: <span className="font-bold text-primary">{activeThemeName}</span></p>
+
+        {/* Preview banner */}
+        {showPreview && previewingTheme && (
+          <div className="glass-card p-3 border border-primary/40 flex items-center justify-between">
+            <p className="text-xs text-foreground">Previewing: <span className="text-primary font-bold">{previewingTheme.name}</span> — Look at the page behind!</p>
+            <div className="flex gap-2">
+              <button onClick={() => applyTheme(previewingTheme)} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Apply Theme</button>
+              <button onClick={cancelPreview} className="px-3 py-1.5 rounded-lg glass-pill text-muted-foreground text-xs">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {websiteThemes.map((theme) => {
+            const isActive = activeThemeName === theme.name;
+            return (
+              <button
+                key={theme.name}
+                onClick={() => previewTheme(theme)}
+                className={`glass-card p-4 text-left transition-all hover:border-primary/40 ${isActive ? "border-primary/60 ring-1 ring-primary/30" : ""}`}
+              >
+                <div className="flex gap-1 mb-3">
+                  {Object.values(theme.colors).slice(0, 5).map((c, i) => (
+                    <div key={i} className="flex-1 h-6 rounded-sm border border-border/20" style={{ background: `hsl(${c})` }} />
+                  ))}
+                </div>
+                <h4 className="text-foreground text-sm font-bold mb-1">{theme.name}</h4>
+                <p className="text-muted-foreground text-[10px]">{theme.description}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[9px] text-primary/60" style={{ fontFamily: theme.font }}>Aa Bb Cc</span>
+                  <span className="text-[9px] text-muted-foreground/50">radius: {theme.radius}</span>
+                  {isActive && <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full ml-auto">Active</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%)" }}>
