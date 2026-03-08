@@ -1298,7 +1298,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && (
+        {activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "settings" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes" && (
           <>
             <button onClick={() => startAdd()} className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">+ Add Record</button>
 
