@@ -35,6 +35,7 @@ function getDB(): Database {
     const parsed = JSON.parse(raw);
     const defaults = getDefaultData();
     let needsSave = false;
+
     // Ensure all tables exist (handles old DBs missing new tables)
     for (const key of Object.keys(defaults) as (keyof Database)[]) {
       if (!parsed[key]) {
@@ -42,6 +43,56 @@ function getDB(): Database {
         needsSave = true;
       }
     }
+
+    // Backfill papers fields
+    if (Array.isArray(parsed.papers)) {
+      parsed.papers = parsed.papers.map((paper: Record<string, any>) => {
+        const next = {
+          ...paper,
+          previewImage: paper.previewImage ?? "",
+          file: paper.file ?? paper.pdf ?? "",
+          pdf: paper.pdf ?? paper.file ?? "",
+          publicationUrl: paper.publicationUrl ?? "",
+        };
+        if (
+          paper.previewImage === undefined ||
+          paper.file === undefined ||
+          paper.pdf === undefined ||
+          paper.publicationUrl === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
+    // Backfill certificates fields
+    if (Array.isArray(parsed.certificates)) {
+      parsed.certificates = parsed.certificates.map((cert: Record<string, any>) => {
+        const verification = cert.verificationUrl ?? cert.credlyUrl ?? cert.urlPath ?? "";
+        const next = {
+          ...cert,
+          previewImage: cert.previewImage ?? "",
+          viewImage: cert.viewImage ?? cert.previewImage ?? cert.image ?? "",
+          file: cert.file ?? "",
+          credlyUrl: cert.credlyUrl ?? verification,
+          verificationUrl: verification,
+          urlPath: cert.urlPath ?? verification,
+        };
+        if (
+          cert.previewImage === undefined ||
+          cert.viewImage === undefined ||
+          cert.file === undefined ||
+          cert.credlyUrl === undefined ||
+          cert.verificationUrl === undefined ||
+          cert.urlPath === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
     if (needsSave) localStorage.setItem(DB_KEY, JSON.stringify(parsed));
     return parsed;
   }
