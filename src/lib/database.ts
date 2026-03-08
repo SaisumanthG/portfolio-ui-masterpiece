@@ -35,6 +35,7 @@ function getDB(): Database {
     const parsed = JSON.parse(raw);
     const defaults = getDefaultData();
     let needsSave = false;
+
     // Ensure all tables exist (handles old DBs missing new tables)
     for (const key of Object.keys(defaults) as (keyof Database)[]) {
       if (!parsed[key]) {
@@ -42,6 +43,56 @@ function getDB(): Database {
         needsSave = true;
       }
     }
+
+    // Backfill papers fields
+    if (Array.isArray(parsed.papers)) {
+      parsed.papers = parsed.papers.map((paper: Record<string, any>) => {
+        const next = {
+          ...paper,
+          previewImage: paper.previewImage ?? "",
+          file: paper.file ?? paper.pdf ?? "",
+          pdf: paper.pdf ?? paper.file ?? "",
+          publicationUrl: paper.publicationUrl ?? "",
+        };
+        if (
+          paper.previewImage === undefined ||
+          paper.file === undefined ||
+          paper.pdf === undefined ||
+          paper.publicationUrl === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
+    // Backfill certificates fields
+    if (Array.isArray(parsed.certificates)) {
+      parsed.certificates = parsed.certificates.map((cert: Record<string, any>) => {
+        const verification = cert.verificationUrl ?? cert.credlyUrl ?? cert.urlPath ?? "";
+        const next = {
+          ...cert,
+          previewImage: cert.previewImage ?? "",
+          viewImage: cert.viewImage ?? cert.previewImage ?? cert.image ?? "",
+          file: cert.file ?? "",
+          credlyUrl: cert.credlyUrl ?? verification,
+          verificationUrl: verification,
+          urlPath: cert.urlPath ?? verification,
+        };
+        if (
+          cert.previewImage === undefined ||
+          cert.viewImage === undefined ||
+          cert.file === undefined ||
+          cert.credlyUrl === undefined ||
+          cert.verificationUrl === undefined ||
+          cert.urlPath === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
     if (needsSave) localStorage.setItem(DB_KEY, JSON.stringify(parsed));
     return parsed;
   }
@@ -137,14 +188,14 @@ function getDefaultData(): Database {
       { id: "h3", title: "Hackathon – XYNTRA (36 Hours)", description: "Built an AI-powered health monitoring system in 36 hours during the XYNTRA hackathon.", image: hackathonXyntra, github: "https://github.com/saisumanth-g" },
     ],
     papers: [
-      { id: "pa1", title: "ESP32-Based Smart Air Quality Monitoring and Automation System with MANET Distress Alerts", description: "A comprehensive research paper on IoT-based air quality monitoring using ESP32 microcontrollers with MANET integration for emergency distress alerts.", pdf: "", image: "", publicationUrl: "" },
-      { id: "pa2", title: "Fingerprint-Based Gender Classification using IVMD-Attention EfficientNet-B1", description: "Research on applying deep learning models for gender classification using fingerprint biometrics with attention-enhanced EfficientNet architecture.", pdf: "", image: "", publicationUrl: "" },
+      { id: "pa1", title: "ESP32-Based Smart Air Quality Monitoring and Automation System with MANET Distress Alerts", description: "A comprehensive research paper on IoT-based air quality monitoring using ESP32 microcontrollers with MANET integration for emergency distress alerts.", pdf: "", file: "", image: "", previewImage: "", publicationUrl: "" },
+      { id: "pa2", title: "Fingerprint-Based Gender Classification using IVMD-Attention EfficientNet-B1", description: "Research on applying deep learning models for gender classification using fingerprint biometrics with attention-enhanced EfficientNet architecture.", pdf: "", file: "", image: "", previewImage: "", publicationUrl: "" },
     ],
     certificates: [
-      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", file: "", credlyUrl: "" },
+      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
     ],
     settings: [
       { id: "s1", key: "resumePdf", value: "" },

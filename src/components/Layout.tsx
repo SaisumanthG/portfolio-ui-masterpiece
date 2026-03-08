@@ -18,9 +18,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative portfolio-shell">
       {/* Header - always above sidebar blur */}
-      <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3">
+      <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3 portfolio-header">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Logo - only show when sidebar is closed */}
           {!sidebarOpen && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 portfolio-logo">
               <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center font-heading font-bold text-primary text-sm">
                 S
               </div>
@@ -61,7 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-64 glass-card border-r border-border/50 pt-20 px-6 pb-6 flex flex-col"
+              className="fixed left-0 top-0 bottom-0 z-50 w-64 glass-card border-r border-border/50 pt-20 px-6 pb-6 flex flex-col portfolio-sidebar"
             >
               <nav className="flex flex-col gap-1 flex-1">
                 {navItems.map((item) => {
@@ -95,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main content */}
-      <main className="pt-16 px-4 md:px-8 pb-12 max-w-6xl mx-auto">
+      <main className="pt-16 px-4 md:px-8 pb-12 max-w-6xl mx-auto portfolio-main">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
