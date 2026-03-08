@@ -1219,7 +1219,7 @@ export default function AdminPage() {
               key={tab.value}
               onClick={() => {
                 setActiveTab(tab.value);
-                if (tab.value !== "Home" && tab.value !== "Stats" && tab.value !== "Customize" && tab.value !== "Colours" && tab.value !== "Fonts") setActiveTable(tab.value as keyof Database);
+                if (tab.value !== "Home" && tab.value !== "Stats" && tab.value !== "Customize" && tab.value !== "Colours" && tab.value !== "Fonts" && tab.value !== "Themes") setActiveTable(tab.value as keyof Database);
                 setEditingId(null);
                 setNewRecord(false);
               }}
