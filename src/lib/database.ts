@@ -188,14 +188,14 @@ function getDefaultData(): Database {
       { id: "h3", title: "Hackathon – XYNTRA (36 Hours)", description: "Built an AI-powered health monitoring system in 36 hours during the XYNTRA hackathon.", image: hackathonXyntra, github: "https://github.com/saisumanth-g" },
     ],
     papers: [
-      { id: "pa1", title: "ESP32-Based Smart Air Quality Monitoring and Automation System with MANET Distress Alerts", description: "A comprehensive research paper on IoT-based air quality monitoring using ESP32 microcontrollers with MANET integration for emergency distress alerts.", pdf: "", image: "", publicationUrl: "" },
-      { id: "pa2", title: "Fingerprint-Based Gender Classification using IVMD-Attention EfficientNet-B1", description: "Research on applying deep learning models for gender classification using fingerprint biometrics with attention-enhanced EfficientNet architecture.", pdf: "", image: "", publicationUrl: "" },
+      { id: "pa1", title: "ESP32-Based Smart Air Quality Monitoring and Automation System with MANET Distress Alerts", description: "A comprehensive research paper on IoT-based air quality monitoring using ESP32 microcontrollers with MANET integration for emergency distress alerts.", pdf: "", file: "", image: "", previewImage: "", publicationUrl: "" },
+      { id: "pa2", title: "Fingerprint-Based Gender Classification using IVMD-Attention EfficientNet-B1", description: "Research on applying deep learning models for gender classification using fingerprint biometrics with attention-enhanced EfficientNet architecture.", pdf: "", file: "", image: "", previewImage: "", publicationUrl: "" },
     ],
     certificates: [
-      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", file: "", credlyUrl: "" },
-      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", file: "", credlyUrl: "" },
+      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
+      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", viewImage: "", file: "", credlyUrl: "", verificationUrl: "", urlPath: "" },
     ],
     settings: [
       { id: "s1", key: "resumePdf", value: "" },
