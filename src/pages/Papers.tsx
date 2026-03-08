@@ -66,10 +66,10 @@ export default function PapersPage() {
     const shareData: ShareData = {
       title: paper.title as string,
       text: paper.description as string,
-      url: window.location.href,
+      url: paper.publicationUrl as string || window.location.href,
     };
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         const pdfSrc = paper.pdf || paper.file;
         if (pdfSrc) {
           try {
@@ -87,14 +87,19 @@ export default function PapersPage() {
           } catch { /* fall through */ }
         }
         await navigator.share(shareData);
-      } catch { /* cancelled */ }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(`${paper.title}\n${paper.description}\n${window.location.href}`);
-        toast.success("Link copied to clipboard!");
-      } catch {
-        toast.error("Sharing not supported in this browser");
+      } else {
+        const text = `${paper.title}\n${paper.description}\n${paper.publicationUrl || window.location.href}`;
+        await navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard!");
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(`${paper.title}\n${paper.publicationUrl || window.location.href}`);
+          toast.success("Copied to clipboard!");
+        } catch {
+          toast.error("Sharing not supported");
+        }
       }
     }
   };

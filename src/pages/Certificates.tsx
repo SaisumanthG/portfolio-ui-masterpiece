@@ -26,11 +26,11 @@ export default function CertificatesPage() {
     const shareData: ShareData = {
       title: cert.title as string,
       text: `${cert.title} - Issued by ${cert.issuer}`,
-      url: window.location.href,
+      url: cert.credlyUrl || window.location.href,
     };
-    if (navigator.share) {
-      try {
-        // Try sharing with file
+    try {
+      if (navigator.share) {
+        // Try sharing with file first
         const imgSrc = cert.previewImage || cert.image;
         if (imgSrc && (imgSrc as string).startsWith("data:")) {
           try {
@@ -47,15 +47,25 @@ export default function CertificatesPage() {
               await navigator.share({ ...shareData, files: [file] });
               return;
             }
-          } catch { /* fall through */ }
+          } catch { /* fall through to text share */ }
         }
         await navigator.share(shareData);
-      } catch { /* cancelled */ }
-    } else {
-      // Fallback: open Twitter share
-      const url = encodeURIComponent(window.location.href);
-      const title = encodeURIComponent(cert.title as string);
-      window.open(`https://twitter.com/intent/tweet?text=${title}&url=${url}`, "_blank", "width=550,height=420");
+      } else {
+        // Fallback: copy link to clipboard
+        const text = `${cert.title} - ${cert.issuer}\n${cert.credlyUrl || window.location.href}`;
+        await navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard!");
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        // User didn't cancel, try clipboard fallback
+        try {
+          await navigator.clipboard.writeText(`${cert.title}\n${cert.credlyUrl || window.location.href}`);
+          toast.success("Copied to clipboard!");
+        } catch {
+          toast.error("Sharing not supported");
+        }
+      }
     }
   };
 
@@ -131,7 +141,7 @@ export default function CertificatesPage() {
                   <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleShare(cert)} className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
                     <Share2 className="w-3.5 h-3.5" />
                   </motion.button>
-                  <motion.a whileHover={{ scale: 1.1 }} href={cert.credlyUrl || "#"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                  <motion.a whileHover={{ scale: 1.1 }} href={cert.credlyUrl as string || "#"} target="_blank" rel="noopener noreferrer" className={`w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors ${!cert.credlyUrl ? "opacity-40 pointer-events-none" : ""}`}>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </motion.a>
                 </div>
