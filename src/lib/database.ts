@@ -141,10 +141,10 @@ function getDefaultData(): Database {
       { id: "pa2", title: "Fingerprint-Based Gender Classification using IVMD-Attention EfficientNet-B1", description: "Research on applying deep learning models for gender classification using fingerprint biometrics with attention-enhanced EfficientNet architecture.", pdf: "", image: "", publicationUrl: "" },
     ],
     certificates: [
-      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", file: "" },
-      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", file: "" },
-      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", file: "" },
-      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", file: "" },
+      { id: "c1", title: "Data Science", issuer: "NASSCOM", valid: "2024–2027", image: certNasscom, previewImage: "", file: "", credlyUrl: "" },
+      { id: "c2", title: "AWS Cloud Practitioner Essentials", issuer: "AWS", valid: "2024–2027", image: certAws, previewImage: "", file: "", credlyUrl: "" },
+      { id: "c3", title: "Python for Data Science", issuer: "NPTEL", valid: "2024–2027", image: certNptel, previewImage: "", file: "", credlyUrl: "" },
+      { id: "c4", title: "Cloud Data Management 2023", issuer: "Oracle", valid: "2023–2026", image: certOracle, previewImage: "", file: "", credlyUrl: "" },
     ],
     settings: [
       { id: "s1", key: "resumePdf", value: "" },
