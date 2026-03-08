@@ -1238,6 +1238,7 @@ export default function AdminPage() {
         {activeTab === "Customize" && <CustomizeTab />}
         {activeTab === "Colours" && <ColoursTab />}
         {activeTab === "Fonts" && <FontsTab />}
+        {activeTab === "Themes" && <ThemesTab />}
         {activeTab === "settings" && <SettingsTab />}
 
         {activeTab === "Home" && (
