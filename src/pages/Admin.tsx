@@ -1201,6 +1201,7 @@ export default function AdminPage() {
     { label: "🎨 Customize", value: "Customize" },
     { label: "🎨 Colours", value: "Colours" },
     { label: "🔤 Fonts", value: "Fonts" },
+    { label: "🎭 Themes", value: "Themes" },
   ];
 
   return (
