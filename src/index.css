@@ -58,9 +58,12 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
+    font-family: var(--font-family, "Inter", "Poppins", sans-serif);
     background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+    color: hsl(var(--foreground));
     min-height: 100vh;
+    transition: background 0.25s ease, color 0.25s ease;
   }
 }
 
