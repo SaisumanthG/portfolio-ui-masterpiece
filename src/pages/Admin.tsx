@@ -13,7 +13,7 @@ const homeTableLabels: Record<string, string> = {
   homeCollege: "College Slides",
 };
 
-type AdminTab = "Home" | "Stats" | "Customize" | "Colours" | "Fonts" | keyof Database;
+type AdminTab = "Home" | "Stats" | "Customize" | "Colours" | "Fonts" | "Themes" | keyof Database;
 
 const isFileField = (key: string) => {
   const lower = key.toLowerCase();
