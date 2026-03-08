@@ -729,32 +729,7 @@ export default function AdminPage() {
     ];
 
     const applyThemeToDOM = (colors: Record<string, string>) => {
-      const root = document.documentElement;
-      Object.entries(colors).forEach(([key, val]) => {
-        root.style.setProperty(`--${key}`, val);
-      });
-      // Also update derived variables
-      if (colors.card) {
-        root.style.setProperty("--glass-bg", colors.card);
-        root.style.setProperty("--popover", colors.card);
-      }
-      if (colors.border) root.style.setProperty("--glass-border", colors.border);
-      if (colors.primary) {
-        root.style.setProperty("--glow-color", colors.primary);
-        root.style.setProperty("--ring", colors.primary);
-        root.style.setProperty("--sidebar-primary", colors.primary);
-      }
-      if (colors.foreground) {
-        root.style.setProperty("--card-foreground", colors.foreground);
-        root.style.setProperty("--popover-foreground", colors.foreground);
-        root.style.setProperty("--sidebar-foreground", colors.foreground);
-      }
-      if (colors.secondary) root.style.setProperty("--input", colors.secondary);
-      if (colors.background) {
-        root.style.setProperty("--sidebar-background", colors.background);
-        // Update body gradient
-        document.body.style.background = `linear-gradient(135deg, hsl(${colors.background}) 0%, hsl(${colors.card || colors.background}) 100%)`;
-      }
+      applyThemeColors(colors);
     };
 
     const applyPalette = (palette: typeof colorPalettes[0]) => {
