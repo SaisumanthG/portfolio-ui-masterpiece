@@ -8,7 +8,7 @@ export interface SharePayload {
 
 export type NativeShareResult = "shared" | "cancelled" | "unavailable";
 
-const isDataUrl = (value?: string): value is string => Boolean(value && value.startsWith("data:"));
+const isDataUrl = (value?: string) => Boolean(value && value.startsWith("data:"));
 
 const normalizeUrl = (url?: string) => {
   if (!url) return window.location.href;
