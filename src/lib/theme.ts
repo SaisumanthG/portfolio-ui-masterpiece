@@ -10,19 +10,29 @@ const parseHsl = (input?: string) => {
 const getReadableForeground = (base: string | undefined, fallback: string) => {
   const parsed = parseHsl(base);
   if (!parsed) return fallback;
-  return parsed.l > 58 ? "222 47% 11%" : "0 0% 100%";
+  if (parsed.l >= 72) return "222 47% 11%";
+  if (parsed.l >= 58) return "225 30% 18%";
+  return "0 0% 100%";
 };
 
 const getMutedForeground = (foreground?: string, background?: string) => {
   const fg = parseHsl(foreground);
   const bg = parseHsl(background);
-  if (!fg || !bg) return "220 15% 60%";
+  if (!fg || !bg) return "220 12% 46%";
 
-  if (bg.l < 50) {
-    return `${fg.h} ${Math.max(10, fg.s - 8)}% ${Math.max(58, fg.l - 28)}%`;
+  if (bg.l >= 85) {
+    return `${fg.h} ${Math.max(8, fg.s - 16)}% 38%`;
   }
 
-  return `${fg.h} ${Math.max(8, fg.s - 10)}% ${Math.max(24, fg.l - 34)}%`;
+  if (bg.l >= 65) {
+    return `${fg.h} ${Math.max(8, fg.s - 14)}% 42%`;
+  }
+
+  if (bg.l <= 30) {
+    return `${fg.h} ${Math.max(10, fg.s - 8)}% 68%`;
+  }
+
+  return `${fg.h} ${Math.max(10, fg.s - 10)}% 52%`;
 };
 
 export function applyThemeColors(colors: ThemeColorMap) {

@@ -1019,6 +1019,46 @@ export default function AdminPage() {
       radius: "0.55rem",
       template: "grid",
     },
+    {
+      name: "White Corporate",
+      description: "Bright corporate white with crisp blue actions",
+      colors: { background: "210 35% 98%", foreground: "222 35% 16%", primary: "216 86% 46%", secondary: "210 26% 93%", accent: "205 80% 52%", muted: "210 24% 95%", card: "0 0% 100%", border: "214 24% 86%" },
+      font: '"Plus Jakarta Sans", sans-serif',
+      radius: "0.5rem",
+      template: "venus",
+    },
+    {
+      name: "Ivory Executive",
+      description: "Professional ivory canvas with understated accents",
+      colors: { background: "38 45% 97%", foreground: "28 22% 18%", primary: "28 88% 44%", secondary: "38 28% 92%", accent: "20 75% 50%", muted: "40 30% 94%", card: "42 36% 99%", border: "32 22% 84%" },
+      font: '"Manrope", sans-serif',
+      radius: "0.65rem",
+      template: "frame",
+    },
+    {
+      name: "Pearl Minimal",
+      description: "Soft white minimal layout for clean portfolios",
+      colors: { background: "210 22% 97%", foreground: "220 24% 19%", primary: "220 72% 42%", secondary: "215 24% 93%", accent: "200 70% 46%", muted: "212 20% 94%", card: "0 0% 100%", border: "216 20% 86%" },
+      font: '"Inter", sans-serif',
+      radius: "0.8rem",
+      template: "minimal",
+    },
+    {
+      name: "Slate White Pro",
+      description: "White + slate contrast with editorial typography",
+      colors: { background: "220 25% 98%", foreground: "220 20% 14%", primary: "224 64% 38%", secondary: "220 20% 92%", accent: "248 64% 45%", muted: "220 18% 94%", card: "0 0% 100%", border: "220 18% 84%" },
+      font: '"IBM Plex Sans", sans-serif',
+      radius: "0.55rem",
+      template: "editorial",
+    },
+    {
+      name: "Arctic White Glass",
+      description: "Bright white glass aesthetic with modern cyan highlights",
+      colors: { background: "196 40% 98%", foreground: "210 28% 16%", primary: "194 88% 40%", secondary: "196 26% 93%", accent: "186 76% 46%", muted: "196 24% 94%", card: "0 0% 100%", border: "196 24% 84%" },
+      font: '"Outfit", sans-serif',
+      radius: "0.9rem",
+      template: "soft",
+    },
   ];
 
   const ThemesTab = () => {
