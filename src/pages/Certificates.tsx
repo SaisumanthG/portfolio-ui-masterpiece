@@ -28,20 +28,35 @@ export default function CertificatesPage() {
     setCertificates(getAllRecords("certificates"));
   }, []);
 
+  const normalizeExternalUrl = (value?: string) => {
+    if (!value) return "";
+    const input = String(value).trim();
+    if (!input) return "";
+
+    try {
+      if (/^https?:\/\//i.test(input)) return new URL(input).toString();
+      if (/^[\w.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(input)) return `https://${input}`;
+      return new URL(input, window.location.origin).toString();
+    } catch {
+      return "";
+    }
+  };
+
   const getVerificationUrl = (cert: DBRecord) =>
-    (cert.verificationUrl || cert.credlyUrl || cert.urlPath || "") as string;
+    normalizeExternalUrl((cert.verificationUrl || cert.credlyUrl || cert.urlPath || "") as string);
 
   const getCardImage = (cert: DBRecord) => (cert.previewImage || cert.image) as string;
   const getViewImage = (cert: DBRecord) => (cert.viewImage || cert.previewImage || cert.image) as string;
   const getDownloadSource = (cert: DBRecord) => (cert.file || cert.viewImage || cert.previewImage || cert.image) as string;
 
   const handleShare = async (cert: DBRecord) => {
+    const downloadSource = getDownloadSource(cert);
     const payload: SharePayload = {
       title: cert.title as string,
       text: `${cert.title} - Issued by ${cert.issuer}`,
       url: getVerificationUrl(cert) || window.location.href,
-      dataUrl: getDownloadSource(cert),
-      fileName: `${cert.title}.jpg`,
+      dataUrl: downloadSource,
+      fileName: `${cert.title}.${downloadSource?.includes("pdf") ? "pdf" : "jpg"}`,
     };
 
     const result = await tryNativeShare(payload);
