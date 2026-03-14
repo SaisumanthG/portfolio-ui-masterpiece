@@ -59,6 +59,13 @@ export default function CertificatesPage() {
       fileName: `${cert.title}.${downloadSource?.includes("pdf") ? "pdf" : "jpg"}`,
     };
 
+    // In iframe/preview, always show fallback dialog
+    if (window.top !== window.self) {
+      setFallbackShare(payload);
+      setFallbackOpen(true);
+      return;
+    }
+
     const result = await tryNativeShare(payload);
     if (result === "unavailable") {
       setFallbackShare(payload);

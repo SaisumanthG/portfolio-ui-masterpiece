@@ -85,6 +85,12 @@ export default function PapersPage() {
       fileName: `${paper.title}.pdf`,
     };
 
+    if (window.top !== window.self) {
+      setFallbackShare(payload);
+      setFallbackOpen(true);
+      return;
+    }
+
     const result = await tryNativeShare(payload);
     if (result === "unavailable") {
       setFallbackShare(payload);
