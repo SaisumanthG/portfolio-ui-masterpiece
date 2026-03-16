@@ -102,7 +102,31 @@ function getDB(): Database {
 }
 
 function saveDB(db: Database) {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  } catch (e: any) {
+    if (e?.name === "QuotaExceededError") {
+      // Strip large data URLs to fit in localStorage
+      const slim = JSON.parse(JSON.stringify(db));
+      for (const table of Object.keys(slim)) {
+        if (Array.isArray(slim[table])) {
+          slim[table] = slim[table].map((rec: any) => {
+            const cleaned = { ...rec };
+            for (const [k, v] of Object.entries(cleaned)) {
+              if (typeof v === "string" && (v as string).length > 50000 && (v as string).startsWith("data:")) {
+                cleaned[k] = "";
+              }
+            }
+            return cleaned;
+          });
+        }
+      }
+      localStorage.setItem(DB_KEY, JSON.stringify(slim));
+      console.warn("Large data URLs stripped to fit localStorage quota.");
+    } else {
+      throw e;
+    }
+  }
 }
 
 export function getAllRecords(table: keyof Database): DBRecord[] {
