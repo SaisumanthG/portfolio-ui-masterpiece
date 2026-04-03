@@ -51,7 +51,9 @@ export function applyThemeColors(colors: ThemeColorMap) {
   const secondary = colors.secondary || root.style.getPropertyValue("--secondary").trim() || "225 35% 16%";
   const accent = colors.accent || root.style.getPropertyValue("--accent").trim() || primary;
   const border = colors.border || root.style.getPropertyValue("--border").trim() || secondary;
+  const muted = colors.muted || root.style.getPropertyValue("--muted").trim() || secondary;
 
+  // Derive all dependent variables
   root.style.setProperty("--glass-bg", card);
   root.style.setProperty("--glass-border", border);
   root.style.setProperty("--glow-color", primary);
@@ -63,11 +65,32 @@ export function applyThemeColors(colors: ThemeColorMap) {
   root.style.setProperty("--popover", card);
   root.style.setProperty("--popover-foreground", foreground);
   root.style.setProperty("--input", secondary);
+  root.style.setProperty("--muted", muted);
 
+  // Contrast-safe foregrounds
   root.style.setProperty("--primary-foreground", getReadableForeground(primary, "0 0% 100%"));
   root.style.setProperty("--secondary-foreground", getReadableForeground(secondary, foreground));
   root.style.setProperty("--accent-foreground", getReadableForeground(accent, "0 0% 100%"));
+
+  // Muted foreground — readable on background
   root.style.setProperty("--muted-foreground", colors["muted-foreground"] || getMutedForeground(foreground, background));
+
+  // Destructive — always readable
+  const bgParsed = parseHsl(background);
+  if (bgParsed && bgParsed.l >= 70) {
+    root.style.setProperty("--destructive", "0 84% 50%");
+    root.style.setProperty("--destructive-foreground", "0 0% 100%");
+  } else {
+    root.style.setProperty("--destructive", "0 84% 60%");
+    root.style.setProperty("--destructive-foreground", "210 40% 98%");
+  }
+
+  // Sidebar accent — derive from primary
+  root.style.setProperty("--sidebar-accent", `${parseHsl(primary)?.h ?? 230} 50% 22%`);
+  root.style.setProperty("--sidebar-accent-foreground", "0 0% 100%");
+  root.style.setProperty("--sidebar-border", border);
+  root.style.setProperty("--sidebar-ring", primary);
+  root.style.setProperty("--sidebar-primary-foreground", getReadableForeground(primary, "0 0% 100%"));
 
   document.body.style.background = `linear-gradient(135deg, hsl(${background}) 0%, hsl(${card}) 100%)`;
   document.body.style.color = `hsl(${foreground})`;

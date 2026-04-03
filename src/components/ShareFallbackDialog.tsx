@@ -89,7 +89,7 @@ function fallbackCopy(text: string): boolean {
   return success;
 }
 
-export default function ShareFallbackDialog({ open, onClose, payload }: ShareFallbackDialogProps) {
+const ShareFallbackDialog = React.forwardRef<HTMLDivElement, ShareFallbackDialogProps>(function ShareFallbackDialog({ open, onClose, payload }, ref) {
   if (!open || !payload) return null;
 
   const links = buildPlatformShareLinks(payload);
