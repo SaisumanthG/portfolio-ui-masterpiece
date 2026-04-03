@@ -195,4 +195,6 @@ const ShareFallbackDialog = React.forwardRef<HTMLDivElement, ShareFallbackDialog
       </div>
     </div>
   );
-}
+});
+
+export default ShareFallbackDialog;
