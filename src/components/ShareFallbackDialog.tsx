@@ -125,7 +125,13 @@ export default function ShareFallbackDialog({ open, onClose, payload }: ShareFal
     ...links.filter(l => l.id !== "instagram").map(l => ({
       id: l.id,
       label: l.label,
-      onClick: () => window.open(l.href, l.id === "email" ? "_self" : "_blank", "noopener,noreferrer"),
+      onClick: () => {
+        if (l.id === "email") {
+          window.location.href = l.href;
+        } else {
+          window.open(l.href, "_blank", "noopener,noreferrer");
+        }
+      },
     })),
     { id: "copy", label: "Copy Link", onClick: handleCopy },
     { id: "more", label: "More", onClick: handleMore },
