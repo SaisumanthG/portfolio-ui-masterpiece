@@ -1,3 +1,4 @@
+import React from "react";
 import { X, Copy, Share2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { buildPlatformShareLinks, type SharePayload } from "@/lib/share";
@@ -88,7 +89,7 @@ function fallbackCopy(text: string): boolean {
   return success;
 }
 
-export default function ShareFallbackDialog({ open, onClose, payload }: ShareFallbackDialogProps) {
+const ShareFallbackDialog = React.forwardRef<HTMLDivElement, ShareFallbackDialogProps>(function ShareFallbackDialog({ open, onClose, payload }, ref) {
   if (!open || !payload) return null;
 
   const links = buildPlatformShareLinks(payload);
@@ -194,4 +195,6 @@ export default function ShareFallbackDialog({ open, onClose, payload }: ShareFal
       </div>
     </div>
   );
-}
+});
+
+export default ShareFallbackDialog;
