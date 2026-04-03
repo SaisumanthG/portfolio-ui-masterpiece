@@ -10,8 +10,10 @@ const parseHsl = (input?: string) => {
 const getReadableForeground = (base: string | undefined, fallback: string) => {
   const parsed = parseHsl(base);
   if (!parsed) return fallback;
+  // For light backgrounds/surfaces, use dark text; for dark, use white
   if (parsed.l >= 72) return "222 47% 11%";
-  if (parsed.l >= 58) return "225 30% 18%";
+  if (parsed.l >= 55) return "225 30% 16%";
+  if (parsed.l >= 40) return "0 0% 100%";
   return "0 0% 100%";
 };
 
