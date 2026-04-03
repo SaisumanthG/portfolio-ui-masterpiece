@@ -1,3 +1,4 @@
+import React from "react";
 import { X, Copy, Share2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { buildPlatformShareLinks, type SharePayload } from "@/lib/share";
