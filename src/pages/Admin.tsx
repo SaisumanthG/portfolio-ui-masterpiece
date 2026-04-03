@@ -982,6 +982,7 @@ export default function AdminPage() {
         if (!colorsRaw) return null;
         return {
           name: localStorage.getItem("portfolio_active_theme") || "Current",
+          category: "Custom",
           description: "Previously applied",
           colors: JSON.parse(colorsRaw),
           font: localStorage.getItem("portfolio_font") || '"Inter", sans-serif',
