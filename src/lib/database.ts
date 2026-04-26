@@ -68,6 +68,17 @@ function getDB(): Database {
       });
     }
 
+    // Backfill projects with a separate live/demo URL for the View Project button.
+    if (Array.isArray(parsed.projects)) {
+      parsed.projects = parsed.projects.map((project: Record<string, any>) => {
+        if (project.projectUrl === undefined) needsSave = true;
+        return {
+          ...project,
+          projectUrl: project.projectUrl ?? project.viewProject ?? project.liveUrl ?? project.github ?? "",
+        };
+      });
+    }
+
     // Backfill certificates fields
     if (Array.isArray(parsed.certificates)) {
       parsed.certificates = parsed.certificates.map((cert: Record<string, any>) => {
@@ -206,11 +217,11 @@ import certOracle from "@/assets/cert-oracle.jpg";
 function getDefaultData(): Database {
   return {
     projects: [
-      { id: "p1", title: "Start or Scrap? – Startup Validation Game", description: "An interactive startup idea-validation game that simulates real-world decision-making under time pressure. Users evaluate randomly generated startup ideas using structured validation questions.", tech: ["Python", "Django", "React", "MySQL"], image: projectStartup, github: "https://github.com/saisumanth-g" },
-      { id: "p2", title: "MediGuardian – AI Health Detection", description: "An AI-based healthcare solution that analyzes voice patterns to assist in the early detection of Parkinson's disease.", tech: ["Python", "Flask", "React", "ML"], image: projectMediguardian, github: "https://github.com/saisumanth-g" },
-      { id: "p3", title: "AI-Based Interior Design Generator", description: "An AI-powered interior design generator developed during internship.", tech: ["Python", "Stable Diffusion", "React"], image: projectInterior, github: "https://github.com/saisumanth-g" },
-      { id: "p4", title: "ESP32 Smart Air Quality Monitor", description: "A hardware project that monitors indoor air quality using ESP32, C programming, and environmental sensors.", tech: ["C", "ESP32", "Sensors"], image: projectEsp32, github: "https://github.com/saisumanth-g" },
-      { id: "p5", title: "Smart Shopping & Billing App", description: "A modern shopping website with online billing and invoice generation.", tech: ["HTML", "CSS", "JavaScript", "Django", "MySQL"], image: projectShopping, github: "https://github.com/saisumanth-g" },
+      { id: "p1", title: "Start or Scrap? – Startup Validation Game", description: "An interactive startup idea-validation game that simulates real-world decision-making under time pressure. Users evaluate randomly generated startup ideas using structured validation questions.", tech: ["Python", "Django", "React", "MySQL"], image: projectStartup, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
+      { id: "p2", title: "MediGuardian – AI Health Detection", description: "An AI-based healthcare solution that analyzes voice patterns to assist in the early detection of Parkinson's disease.", tech: ["Python", "Flask", "React", "ML"], image: projectMediguardian, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
+      { id: "p3", title: "AI-Based Interior Design Generator", description: "An AI-powered interior design generator developed during internship.", tech: ["Python", "Stable Diffusion", "React"], image: projectInterior, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
+      { id: "p4", title: "ESP32 Smart Air Quality Monitor", description: "A hardware project that monitors indoor air quality using ESP32, C programming, and environmental sensors.", tech: ["C", "ESP32", "Sensors"], image: projectEsp32, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
+      { id: "p5", title: "Smart Shopping & Billing App", description: "A modern shopping website with online billing and invoice generation.", tech: ["HTML", "CSS", "JavaScript", "Django", "MySQL"], image: projectShopping, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
     ],
     internships: [
       { id: "i1", company: "Generative AI Developer", role: "Intern", period: "AI-Based Interior Design Generator", description: "Developed an AI-powered interior design generator using Stable Diffusion models and React frontend. Created intelligent room layout suggestions and style recommendations using generative AI techniques.", image: internshipAiDesign, website: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },
