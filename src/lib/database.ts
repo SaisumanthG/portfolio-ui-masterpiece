@@ -24,6 +24,8 @@ export interface Database {
 }
 
 const DB_KEY = "portfolio_db";
+const LARGE_FIELD_LIMIT = 50000;
+const FALLBACK_FIELD_LIMIT = 12000;
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -101,28 +103,36 @@ function getDB(): Database {
   return seed;
 }
 
+function stripLargeStorageFields(db: Database, limit = LARGE_FIELD_LIMIT): Database {
+  const slim = JSON.parse(JSON.stringify(db));
+  for (const table of Object.keys(slim)) {
+    if (Array.isArray(slim[table])) {
+      slim[table] = slim[table].map((rec: any) => {
+        const cleaned = { ...rec };
+        for (const [k, v] of Object.entries(cleaned)) {
+          if (typeof v === "string" && v.length > limit) {
+            cleaned[k] = "";
+          }
+        }
+        return cleaned;
+      });
+    }
+  }
+  return slim;
+}
+
 function saveDB(db: Database) {
   try {
     localStorage.setItem(DB_KEY, JSON.stringify(db));
   } catch (e: any) {
     if (e?.name === "QuotaExceededError") {
-      // Strip large data URLs to fit in localStorage
-      const slim = JSON.parse(JSON.stringify(db));
-      for (const table of Object.keys(slim)) {
-        if (Array.isArray(slim[table])) {
-          slim[table] = slim[table].map((rec: any) => {
-            const cleaned = { ...rec };
-            for (const [k, v] of Object.entries(cleaned)) {
-              if (typeof v === "string" && (v as string).length > 50000 && (v as string).startsWith("data:")) {
-                cleaned[k] = "";
-              }
-            }
-            return cleaned;
-          });
-        }
+      // Strip oversized uploaded PDFs/images/files before retrying so the UI never crashes.
+      try {
+        localStorage.setItem(DB_KEY, JSON.stringify(stripLargeStorageFields(db)));
+      } catch {
+        localStorage.setItem(DB_KEY, JSON.stringify(stripLargeStorageFields(db, FALLBACK_FIELD_LIMIT)));
       }
-      localStorage.setItem(DB_KEY, JSON.stringify(slim));
-      console.warn("Large data URLs stripped to fit localStorage quota.");
+      console.warn("Large uploaded file data was removed to fit localStorage quota.");
     } else {
       throw e;
     }
