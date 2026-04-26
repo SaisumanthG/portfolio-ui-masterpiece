@@ -21,6 +21,7 @@ export default function ProjectsPage() {
   }, []);
 
   const folderColors = ["text-primary/70", "text-amber-500/70", "text-emerald-500/70", "text-rose-500/70", "text-cyan-500/70"];
+  const fallbackUrl = "https://github.com/saisumanth-g";
 
   return (
     <div>
@@ -69,11 +70,11 @@ export default function ProjectsPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <a href={project.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+              <a href={project.projectUrl || project.github || fallbackUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
                 <ExternalLink className="w-3.5 h-3.5" />
                 View Project
               </a>
-              <a href={project.github || "https://github.com/saisumanth-g"} target="_blank" rel="noopener noreferrer" className="glass-pill p-2.5 rounded-lg hover:border-primary/50 transition-colors flex items-center justify-center">
+              <a href={project.github || fallbackUrl} target="_blank" rel="noopener noreferrer" className="glass-pill p-2.5 rounded-lg hover:border-primary/50 transition-colors flex items-center justify-center">
                 <Github className="w-4 h-4 text-muted-foreground" />
               </a>
             </div>
