@@ -273,10 +273,10 @@ export default function AdminPage() {
       const current = prev[field] || { x: 0, y: 0, zoom: 1 };
       const step = 5;
       const next = { ...current };
-      if (dir === "up") next.y = Math.max(-50, current.y - step);
-      if (dir === "down") next.y = Math.min(50, current.y + step);
-      if (dir === "left") next.x = Math.max(-50, current.x - step);
-      if (dir === "right") next.x = Math.min(50, current.x + step);
+      if (dir === "up") next.y = current.y - step;
+      if (dir === "down") next.y = current.y + step;
+      if (dir === "left") next.x = current.x - step;
+      if (dir === "right") next.x = current.x + step;
       return { ...prev, [field]: next };
     });
   };
@@ -299,7 +299,7 @@ export default function AdminPage() {
     return "rectangle";
   };
 
-  const shouldContainImage = (field: string) => ["logoimage", "previewimage"].includes(field.toLowerCase());
+    const shouldContainImage = (field: string) => ["logoimage", "previewimage"].includes(field.toLowerCase()) || activeTable === "homeCollege";
 
   const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
     const inputRef = useRef<HTMLInputElement>(null);
