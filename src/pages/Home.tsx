@@ -4,6 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { getAllRecords } from "@/lib/database";
 import { toast } from "sonner";
 
+type HomeProfile = {
+  name: string;
+  subtitle: string;
+  image: string;
+  logoImage: string;
+  collegeImage: string;
+  imageNudge: string;
+  logoImageNudge: string;
+  collegeImageNudge: string;
+};
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }),
@@ -15,7 +26,7 @@ const scaleIn = {
 };
 
 export default function HomePage() {
-  const [profile, setProfile] = useState({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "", imageNudge: "", collegeImageNudge: "" });
+  const [profile, setProfile] = useState<HomeProfile>({ name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", logoImage: "", collegeImage: "", imageNudge: "", logoImageNudge: "", collegeImageNudge: "" });
   const [aboutText, setAboutText] = useState("");
   const [skills, setSkills] = useState<{ category: string; items: string[] }[]>([]);
   const [links, setLinks] = useState<{ label: string; url: string; icon: string }[]>([]);
@@ -30,14 +41,16 @@ export default function HomePage() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.6]);
 
-  useEffect(() => {
+  const loadHomeData = () => {
     const profileRecs = getAllRecords("homeProfile");
     if (profileRecs.length > 0) setProfile({
       name: profileRecs[0].name || "Sai Sumanth G",
       subtitle: profileRecs[0].subtitle || "",
       image: profileRecs[0].image || "",
+      logoImage: profileRecs[0].logoImage || profileRecs[0].collegeImage || "",
       collegeImage: profileRecs[0].collegeImage || "",
       imageNudge: profileRecs[0].imageNudge || "",
+      logoImageNudge: profileRecs[0].logoImageNudge || "",
       collegeImageNudge: profileRecs[0].collegeImageNudge || "",
     });
     const aboutRecs = getAllRecords("homeAbout");
@@ -52,6 +65,15 @@ export default function HomePage() {
     setLinks(linkRecs.map(l => ({ label: l.label, url: l.url, icon: l.icon })));
     const collegeRecs = getAllRecords("homeCollege");
     setCollegeSlides(collegeRecs.map(c => ({ year: c.year, title: c.title, description: c.description, image: c.image || "", imageNudge: c.imageNudge || "" })));
+  };
+
+  useEffect(() => {
+    loadHomeData();
+    const handler = (e: StorageEvent) => {
+      if (e.key === "portfolio_db") loadHomeData();
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   const currentYearItems = collegeSlides.filter(s => s.year === selectedYear);
@@ -213,8 +235,8 @@ export default function HomePage() {
               <div className="space-y-4">
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
-                    {profile.collegeImage ? (
-                      <img src={profile.collegeImage} alt="College" className="w-full h-full object-cover" style={getNudgeStyle(profile.collegeImageNudge)} />
+                    {profile.logoImage ? (
+                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain p-2" style={getNudgeStyle(profile.logoImageNudge)} />
                     ) : (
                       <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
                     )}

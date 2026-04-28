@@ -116,6 +116,32 @@ function getDB(): Database {
       });
     }
 
+    // Backfill home profile media fields for admin-managed hero and logo uploads.
+    if (Array.isArray(parsed.homeProfile)) {
+      parsed.homeProfile = parsed.homeProfile.map((profile: Record<string, any>) => {
+        const next = {
+          ...profile,
+          image: profile.image ?? "",
+          logoImage: profile.logoImage ?? profile.collegeImage ?? "",
+          collegeImage: profile.collegeImage ?? "",
+          imageNudge: profile.imageNudge ?? "",
+          logoImageNudge: profile.logoImageNudge ?? "",
+          collegeImageNudge: profile.collegeImageNudge ?? "",
+        };
+        if (
+          profile.image === undefined ||
+          profile.logoImage === undefined ||
+          profile.collegeImage === undefined ||
+          profile.imageNudge === undefined ||
+          profile.logoImageNudge === undefined ||
+          profile.collegeImageNudge === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
     if (needsSave) saveDB(parsed);
     return parsed;
   }
@@ -132,6 +158,7 @@ function writeStorage(value: string, clearExisting = false) {
   try {
     if (clearExisting) localStorage.removeItem(DB_KEY);
     localStorage.setItem(DB_KEY, value);
+    window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
     return true;
   } catch (error) {
     if (!isQuotaError(error)) console.warn("Unable to save portfolio database", error);
@@ -290,7 +317,7 @@ function getDefaultData(): Database {
       { id: "s1", key: "resumePdf", value: "" },
     ],
     homeProfile: [
-      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "" },
+      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", logoImage: "", collegeImage: "", imageNudge: "", logoImageNudge: "", collegeImageNudge: "" },
     ],
     homeAbout: [
       { id: "ha1", content: "A passionate developer with a love for building innovative solutions. Experienced in Full Stack Development, Machine Learning, and Cloud technologies. Exploring the intersection of design and technology to create impactful products. Currently seeking opportunities to make a meaningful contribution in the tech industry." },

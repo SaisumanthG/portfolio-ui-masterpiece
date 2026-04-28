@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Home, FolderOpen, Building2, Trophy, FileText, Award } from "lucide-react";
 import PingMe from "./PingMe";
+import { getAllRecords } from "@/lib/database";
 
 const navItems = [
   { title: "Home", path: "/home", icon: Home },
@@ -15,7 +16,18 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [brandLogo, setBrandLogo] = useState("");
   const location = useLocation();
+
+  useEffect(() => {
+    const loadLogo = () => setBrandLogo((getAllRecords("homeProfile")[0]?.logoImage as string) || "");
+    loadLogo();
+    const handler = (e: StorageEvent) => {
+      if (e.key === "portfolio_db") loadLogo();
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   return (
     <div className="min-h-screen relative portfolio-shell">
@@ -32,8 +44,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo - only show when sidebar is closed */}
           {!sidebarOpen && (
             <div className="flex items-center gap-2 portfolio-logo">
-              <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center font-heading font-bold text-primary text-sm">
-                S
+              <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center font-heading font-bold text-primary text-sm overflow-hidden">
+                {brandLogo ? <img src={brandLogo} alt="Portfolio logo" className="w-full h-full object-contain p-1" /> : "S"}
               </div>
               <span className="text-sm font-heading font-semibold text-foreground hidden sm:block">
                 Saisumanth_Portfolio
