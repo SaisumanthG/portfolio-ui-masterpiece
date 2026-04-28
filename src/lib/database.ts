@@ -116,15 +116,30 @@ function getDB(): Database {
       });
     }
 
-    if (needsSave) localStorage.setItem(DB_KEY, JSON.stringify(parsed));
+    if (needsSave) saveDB(parsed);
     return parsed;
   }
   const seed = getDefaultData();
-  localStorage.setItem(DB_KEY, JSON.stringify(seed));
+  saveDB(seed);
   return seed;
 }
 
-function stripLargeStorageFields(db: Database, limit = LARGE_FIELD_LIMIT): Database {
+function isQuotaError(error: unknown) {
+  return error instanceof DOMException && (error.name === "QuotaExceededError" || error.code === 22);
+}
+
+function writeStorage(value: string, clearExisting = false) {
+  try {
+    if (clearExisting) localStorage.removeItem(DB_KEY);
+    localStorage.setItem(DB_KEY, value);
+    return true;
+  } catch (error) {
+    if (!isQuotaError(error)) console.warn("Unable to save portfolio database", error);
+    return false;
+  }
+}
+
+function stripLargeStorageFields(db: StoredDatabase, limit = LARGE_FIELD_LIMIT): StoredDatabase {
   const slim = JSON.parse(JSON.stringify(db));
   for (const table of Object.keys(slim)) {
     if (Array.isArray(slim[table])) {
@@ -142,22 +157,20 @@ function stripLargeStorageFields(db: Database, limit = LARGE_FIELD_LIMIT): Datab
   return slim;
 }
 
-function saveDB(db: Database) {
-  try {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-  } catch (e: any) {
-    if (e?.name === "QuotaExceededError") {
-      // Strip oversized uploaded PDFs/images/files before retrying so the UI never crashes.
-      try {
-        localStorage.setItem(DB_KEY, JSON.stringify(stripLargeStorageFields(db)));
-      } catch {
-        localStorage.setItem(DB_KEY, JSON.stringify(stripLargeStorageFields(db, FALLBACK_FIELD_LIMIT)));
-      }
-      console.warn("Large uploaded file data was removed to fit localStorage quota.");
-    } else {
-      throw e;
-    }
+function saveDB(db: StoredDatabase) {
+  const attempts = [
+    db,
+    stripLargeStorageFields(db, LARGE_FIELD_LIMIT),
+    stripLargeStorageFields(db, FALLBACK_FIELD_LIMIT),
+    stripLargeStorageFields(db, MIN_FIELD_LIMIT),
+  ];
+
+  for (const attempt of attempts) {
+    if (writeStorage(JSON.stringify(attempt))) return;
   }
+
+  if (writeStorage(JSON.stringify(attempts[attempts.length - 1]), true)) return;
+  console.warn("Portfolio database could not fit in localStorage; large uploaded file data was skipped.");
 }
 
 export function getAllRecords(table: keyof Database): DBRecord[] {
