@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Download, Share2, ExternalLink, Eye, X, ImageIcon, Mail } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { getAllRecords, type DBRecord } from "@/lib/database";
+import { addDownloadStat, getAllRecords, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
 import ShareFallbackDialog from "@/components/ShareFallbackDialog";
@@ -18,15 +18,7 @@ const cardVariant = {
 };
 
 function trackDownload(paperId: string, paperTitle: string) {
-  const db = JSON.parse(localStorage.getItem("portfolio_db") || "{}");
-  if (!db.downloadStats) db.downloadStats = [];
-  db.downloadStats.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-    paperId,
-    paperTitle,
-    timestamp: new Date().toISOString(),
-  });
-  localStorage.setItem("portfolio_db", JSON.stringify(db));
+  addDownloadStat(paperId, paperTitle);
 }
 
 export default function PapersPage() {

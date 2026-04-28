@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAllRecords, addRecord, updateRecord, deleteRecord, type Database, type DBRecord } from "@/lib/database";
+import { getAllRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, type Database, type DBRecord } from "@/lib/database";
 import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette, Type, History, LayoutTemplate } from "lucide-react";
 import { applyLayoutTemplate, applyThemeColors, applyThemeFont, applyThemeRadius, loadFontIfNeeded } from "@/lib/theme";
 import { professionalThemes, type ProfessionalTheme } from "@/lib/professional-themes";
@@ -572,8 +572,7 @@ export default function AdminPage() {
   };
 
   const DownloadStats = () => {
-    const db = JSON.parse(localStorage.getItem("portfolio_db") || "{}");
-    const stats: { id: string; paperId: string; paperTitle: string; timestamp: string }[] = db.downloadStats || [];
+    const stats = getDownloadStats();
     const grouped: Record<string, { title: string; count: number; lastDownload: string }> = {};
     stats.forEach((s) => {
       if (!grouped[s.paperId]) grouped[s.paperId] = { title: s.paperTitle, count: 0, lastDownload: s.timestamp };
