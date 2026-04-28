@@ -21,7 +21,6 @@ export interface Database {
   homeSkills: DBRecord[];
   homeLinks: DBRecord[];
   homeCollege: DBRecord[];
-  downloadStats: DownloadStat[];
 }
 
 export interface DownloadStat {
@@ -35,6 +34,8 @@ const DB_KEY = "portfolio_db";
 const LARGE_FIELD_LIMIT = 50000;
 const FALLBACK_FIELD_LIMIT = 12000;
 const MIN_FIELD_LIMIT = 1000;
+
+type StoredDatabase = Database & { downloadStats?: DownloadStat[] };
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
