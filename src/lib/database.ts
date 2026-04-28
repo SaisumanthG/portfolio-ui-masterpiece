@@ -317,7 +317,7 @@ function getDefaultData(): Database {
       { id: "s1", key: "resumePdf", value: "" },
     ],
     homeProfile: [
-      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", collegeImage: "" },
+      { id: "hp1", name: "Sai Sumanth G", subtitle: "Full Stack Developer · AI Enthusiast · Builder", image: "", logoImage: "", collegeImage: "", imageNudge: "", logoImageNudge: "", collegeImageNudge: "" },
     ],
     homeAbout: [
       { id: "ha1", content: "A passionate developer with a love for building innovative solutions. Experienced in Full Stack Development, Machine Learning, and Cloud technologies. Exploring the intersection of design and technology to create impactful products. Currently seeking opportunities to make a meaningful contribution in the tech industry." },
