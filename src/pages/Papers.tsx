@@ -30,7 +30,13 @@ export default function PapersPage() {
   const customization = useCustomization("papers");
 
   useEffect(() => {
-    setPapers(getAllRecords("papers"));
+    const loadPapers = () => setPapers(getAllRecords("papers"));
+    loadPapers();
+    const handler = (e: StorageEvent) => {
+      if (e.key === "portfolio_db") loadPapers();
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   const getBlobUrl = useCallback((dataUrl: string) => {
@@ -174,13 +180,13 @@ export default function PapersPage() {
           >
             <div
               className="relative w-full overflow-hidden bg-secondary/30 p-2 md:p-3 flex items-center justify-center"
-              style={{ minHeight: customization.imageHeight || 224 }}
+              style={{ height: customization.imageHeight || 224 }}
             >
               {getDisplayImage(paper) ? (
                 <img
                   src={getDisplayImage(paper)}
                   alt={paper.title as string}
-                  className="w-full max-w-3xl h-auto max-h-[46vh] rounded-lg object-contain shadow-sm"
+                  className="w-full h-full rounded-lg object-contain shadow-sm"
                   style={getImageStyle(paper)}
                 />
               ) : (
