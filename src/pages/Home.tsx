@@ -235,8 +235,8 @@ export default function HomePage() {
               <div className="space-y-4">
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
-                    {profile.collegeImage ? (
-                      <img src={profile.collegeImage} alt="College" className="w-full h-full object-cover" style={getNudgeStyle(profile.collegeImageNudge)} />
+                    {profile.logoImage ? (
+                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain p-2" style={getNudgeStyle(profile.logoImageNudge)} />
                     ) : (
                       <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
                     )}
