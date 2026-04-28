@@ -273,10 +273,10 @@ export default function AdminPage() {
       const current = prev[field] || { x: 0, y: 0, zoom: 1 };
       const step = 5;
       const next = { ...current };
-      if (dir === "up") next.y = Math.max(-50, current.y - step);
-      if (dir === "down") next.y = Math.min(50, current.y + step);
-      if (dir === "left") next.x = Math.max(-50, current.x - step);
-      if (dir === "right") next.x = Math.min(50, current.x + step);
+      if (dir === "up") next.y = current.y - step;
+      if (dir === "down") next.y = current.y + step;
+      if (dir === "left") next.x = current.x - step;
+      if (dir === "right") next.x = current.x + step;
       return { ...prev, [field]: next };
     });
   };
@@ -299,7 +299,7 @@ export default function AdminPage() {
     return "rectangle";
   };
 
-  const shouldContainImage = (field: string) => ["logoimage", "previewimage"].includes(field.toLowerCase());
+    const shouldContainImage = (field: string) => ["logoimage", "previewimage"].includes(field.toLowerCase()) || activeTable === "homeCollege";
 
   const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -645,8 +645,8 @@ export default function AdminPage() {
         { key: "cardPadding", label: "Card Padding (px)", min: 4, max: 40, default: 16 },
       ]},
       { key: "papers", label: "Conference Papers", boxes: [
-        { key: "imageHeight", label: "Image Box Height (px)", min: 120, max: 400, default: 224 },
-        { key: "cardPadding", label: "Card Padding (px)", min: 4, max: 40, default: 24 },
+        { key: "imageHeight", label: "Image Box Height (px)", min: 120, max: 800, default: 224 },
+        { key: "cardPadding", label: "Card Padding (px)", min: 0, max: 160, default: 24 },
       ]},
       { key: "certificates", label: "Certificates", boxes: [
         { key: "imageHeight", label: "Certificate Image Height (px)", min: 120, max: 400, default: 224 },
@@ -654,8 +654,8 @@ export default function AdminPage() {
       ]},
       { key: "home", label: "Home", boxes: [
         { key: "profileSize", label: "Profile Circle Size (px)", min: 80, max: 300, default: 192 },
-        { key: "collegeImageHeight", label: "College Slide Image Height (px)", min: 120, max: 400, default: 256 },
-        { key: "cardPadding", label: "Section Padding (px)", min: 4, max: 40, default: 20 },
+        { key: "collegeImageHeight", label: "College Slide Image Height (px)", min: 120, max: 800, default: 256 },
+        { key: "cardPadding", label: "Section Padding (px)", min: 0, max: 160, default: 20 },
       ]},
     ];
 
