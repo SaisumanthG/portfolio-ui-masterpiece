@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { User, Download, Github, Code2, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getAllRecords } from "@/lib/database";
+import { useCustomization } from "@/hooks/use-customization";
 import { toast } from "sonner";
 
 type HomeProfile = {
@@ -33,6 +34,7 @@ export default function HomePage() {
   const [collegeSlides, setCollegeSlides] = useState<{ year: string; title: string; description: string; image: string; imageNudge?: string }[]>([]);
   const [selectedYear, setSelectedYear] = useState("1st Year");
   const [yearContentIndex, setYearContentIndex] = useState(0);
+  const customization = useCustomization("home");
   const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
   // Parallax
@@ -122,8 +124,11 @@ export default function HomePage() {
 
   const getNudgeStyle = (nudge: string | undefined) => {
     if (!nudge) return undefined;
-    const [x, y] = nudge.split(",").map(Number);
-    return { objectPosition: `${50 + (x || 0)}% ${50 + (y || 0)}%` };
+    const [x, y, zoom] = nudge.split(",").map(Number);
+    return {
+      objectPosition: `${50 + (x || 0)}% ${50 + (y || 0)}%`,
+      transform: `scale(${zoom || 1})`,
+    };
   };
 
   const currentSlide = currentYearItems[yearContentIndex];
@@ -270,10 +275,11 @@ export default function HomePage() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.4 }}
-                      className="image-placeholder w-full h-48 md:h-64 rounded-lg flex items-center justify-center overflow-hidden"
+                      className="image-placeholder w-full rounded-lg flex items-center justify-center overflow-hidden"
+                      style={{ height: customization.collegeImageHeight || 256 }}
                     >
                       {currentSlide.image ? (
-                        <img src={currentSlide.image} alt="" className="w-full h-full object-cover" style={getNudgeStyle(currentSlide.imageNudge)} />
+                        <img src={currentSlide.image} alt={currentSlide.title} className="w-full h-full object-contain" style={getNudgeStyle(currentSlide.imageNudge)} />
                       ) : (
                         <span className="text-muted-foreground/40 text-sm">{selectedYear} - Slide {yearContentIndex + 1}</span>
                       )}
