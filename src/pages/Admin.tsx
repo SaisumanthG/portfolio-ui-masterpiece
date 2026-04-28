@@ -1269,7 +1269,7 @@ export default function AdminPage() {
                           <h4 className="text-foreground text-xs font-heading font-semibold">New Record</h4>
                           {Object.entries(editData).map(([key, val]) => (
                             <div key={key}>
-                              <label className="text-xs text-muted-foreground block mb-1">{key}</label>
+                              <label className="text-xs text-muted-foreground block mb-1">{fieldLabels[key] || key}</label>
                               {isFileField(key) ? (
                                 <FileUploadZone field={key} value={val} id="new" />
                               ) : (
@@ -1303,7 +1303,7 @@ export default function AdminPage() {
                 <h3 className="text-foreground text-sm font-heading font-semibold">New Record</h3>
                 {Object.entries(editData).map(([key, val]) => (
                   <div key={key}>
-                    <label className="text-xs text-muted-foreground block mb-1">{key}</label>
+                    <label className="text-xs text-muted-foreground block mb-1">{fieldLabels[key] || key}</label>
                     {isFileField(key) ? (
                       <FileUploadZone field={key} value={val} id="new" />
                     ) : (
