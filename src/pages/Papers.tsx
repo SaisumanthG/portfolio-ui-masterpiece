@@ -180,12 +180,15 @@ export default function PapersPage() {
             variants={cardVariant}
             className="glass-card overflow-hidden hover-glass"
           >
-            <div className="relative w-full overflow-hidden" style={{ height: customization.imageHeight || 224 }}>
+            <div
+              className="relative w-full overflow-hidden bg-secondary/30"
+              style={{ minHeight: customization.imageHeight || 224 }}
+            >
               {getDisplayImage(paper) ? (
                 <img
                   src={getDisplayImage(paper)}
                   alt={paper.title as string}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto max-h-[78vh] object-contain"
                   style={getImageStyle(paper)}
                 />
               ) : (
