@@ -170,21 +170,21 @@ export default function PapersPage() {
             whileInView="visible"
             viewport={{ once: true, margin: "-30px" }}
             variants={cardVariant}
-            className="glass-card overflow-hidden hover-glass"
+            className="glass-card overflow-hidden hover-glass max-w-4xl mx-auto"
           >
             <div
-              className="relative w-full overflow-hidden bg-secondary/30"
+              className="relative w-full overflow-hidden bg-secondary/30 p-2 md:p-3 flex items-center justify-center"
               style={{ minHeight: customization.imageHeight || 224 }}
             >
               {getDisplayImage(paper) ? (
                 <img
                   src={getDisplayImage(paper)}
                   alt={paper.title as string}
-                  className="w-full h-auto max-h-[78vh] object-contain"
+                  className="w-full max-w-3xl h-auto max-h-[46vh] rounded-lg object-contain shadow-sm"
                   style={getImageStyle(paper)}
                 />
               ) : (
-                <div className="w-full h-full image-placeholder flex items-center justify-center">
+                <div className="w-full h-full min-h-48 image-placeholder flex items-center justify-center">
                   <ImageIcon className="w-12 h-12 text-primary/20" />
                 </div>
               )}
