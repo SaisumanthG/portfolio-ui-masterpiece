@@ -8,11 +8,20 @@ const contentTables: (keyof Database)[] = ["projects", "internships", "hackathon
 const homeTables: (keyof Database)[] = ["homeProfile", "homeAbout", "homeSkills", "homeLinks", "homeCollege"];
 
 const homeTableLabels: Record<string, string> = {
-  homeProfile: "Profile (Name, Subtitle, Image)",
+  homeProfile: "Home Hero & Logo (Name, Subtitle, Hero Image, Logo)",
   homeAbout: "About Me",
   homeSkills: "Skills",
   homeLinks: "Profile Links (GitHub, LeetCode, etc.)",
   homeCollege: "College Slides",
+};
+
+const fieldLabels: Record<string, string> = {
+  image: "Hero Image",
+  logoImage: "Logo Image",
+  collegeImage: "College Image",
+  previewImage: "Preview Image",
+  projectUrl: "View Project Link",
+  github: "GitHub Link",
 };
 
 type AdminTab = "Home" | "Stats" | "Customize" | "Colours" | "Fonts" | "Themes" | keyof Database;
@@ -286,9 +295,11 @@ export default function AdminPage() {
   const getPreviewShape = (field: string): "circle" | "rectangle" => {
     const lower = field.toLowerCase();
     if (lower === "image" && activeTable === "homeProfile") return "circle";
-    if (lower === "collegeimage") return "circle";
+    if (lower === "logoimage" || lower === "collegeimage") return "circle";
     return "rectangle";
   };
+
+  const shouldContainImage = (field: string) => ["logoimage", "previewimage"].includes(field.toLowerCase());
 
   const FileUploadZone = ({ field, value, id }: { field: string; value: string; id: string }) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -348,7 +359,7 @@ export default function AdminPage() {
                   <img
                     src={value}
                     alt="Preview"
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${shouldContainImage(field) ? "object-contain p-2" : "object-cover"}`}
                     style={{
                       objectPosition: `${50 + offset.x}% ${50 + offset.y}%`,
                       transform: `scale(${offset.zoom})`,
