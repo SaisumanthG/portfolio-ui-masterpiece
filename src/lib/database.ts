@@ -221,6 +221,27 @@ export function importDatabase(json: string) {
   saveDB(data);
 }
 
+export function getDownloadStats(): DownloadStat[] {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StoredDatabase;
+    return Array.isArray(parsed.downloadStats) ? parsed.downloadStats : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addDownloadStat(paperId: string, paperTitle: string) {
+  const db = getDB() as StoredDatabase;
+  const currentStats = Array.isArray(db.downloadStats) ? db.downloadStats : [];
+  db.downloadStats = [
+    ...currentStats,
+    { id: generateId(), paperId, paperTitle, timestamp: new Date().toISOString() },
+  ].slice(-200);
+  saveDB(db);
+}
+
 // Import images as modules
 import projectStartup from "@/assets/project-startup.jpg";
 import projectMediguardian from "@/assets/project-mediguardian.jpg";
