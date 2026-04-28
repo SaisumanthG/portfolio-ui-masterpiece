@@ -445,7 +445,7 @@ export default function AdminPage() {
         <div className="glass-card p-4 space-y-2">
           {Object.entries(editData).filter(([k]) => k !== "id" && !k.endsWith("Nudge")).map(([key, val]) => (
             <div key={key}>
-              <label className="text-xs text-muted-foreground block mb-1">{key}</label>
+              <label className="text-xs text-muted-foreground block mb-1">{fieldLabels[key] || key}</label>
               {isFileField(key) ? (
                 <FileUploadZone field={key} value={val} id={record.id} />
               ) : key === "icon" ? (
@@ -472,7 +472,7 @@ export default function AdminPage() {
           <div className="space-y-1 flex-1">
             {Object.entries(record).filter(([k]) => k !== "id" && !k.endsWith("Nudge")).map(([key, val]) => (
               <p key={key} className="text-xs">
-                <span className="text-primary font-medium">{key}:</span>{" "}
+                  <span className="text-primary font-medium">{fieldLabels[key] || key}:</span>{" "}
                 <span className="text-foreground/80">
                   {typeof val === "string" && val.startsWith("data:") ? "📎 File uploaded" : typeof val === "object" ? JSON.stringify(val) : String(val || "—")}
                 </span>
