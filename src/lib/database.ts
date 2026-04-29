@@ -296,12 +296,16 @@ export function importDatabase(json: string) {
 
 export function subscribeToDatabaseChanges(callback: () => void) {
   const handler = () => callback();
-  window.addEventListener(DB_CHANGE_EVENT, handler);
-  window.addEventListener("storage", (event) => {
+  const storageHandler = (event: StorageEvent) => {
     if (event.key === DB_KEY) callback();
-  });
+  };
+  window.addEventListener(DB_CHANGE_EVENT, handler);
+  window.addEventListener("storage", storageHandler);
   startRealtimeSync();
-  return () => window.removeEventListener(DB_CHANGE_EVENT, handler);
+  return () => {
+    window.removeEventListener(DB_CHANGE_EVENT, handler);
+    window.removeEventListener("storage", storageHandler);
+  };
 }
 
 export function startRealtimeSync() {
