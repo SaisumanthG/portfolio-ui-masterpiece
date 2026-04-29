@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAllRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, type Database, type DBRecord } from "@/lib/database";
+import { getAllRecords, fetchAllData, fetchRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, getCustomizations, saveCustomizations, getAppearance, saveAppearance, type Database, type DBRecord } from "@/lib/database";
 import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette, Type, History, LayoutTemplate } from "lucide-react";
 import { applyLayoutTemplate, applyThemeColors, applyThemeFont, applyThemeRadius, loadFontIfNeeded } from "@/lib/theme";
 import { professionalThemes, type ProfessionalTheme } from "@/lib/professional-themes";
@@ -148,15 +148,19 @@ export default function AdminPage() {
   });
   const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number; zoom: number }>>({});
 
-  const refresh = () => {
+  const refresh = async () => {
     if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") {
-      setRecords(getAllRecords(activeTable));
+      setRecords(await fetchRecords(activeTable));
     }
   };
 
   useEffect(() => {
     if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") refresh();
   }, [activeTable, authenticated, activeTab]);
+
+  useEffect(() => {
+    if (authenticated && activeTab === "Home") fetchAllData().then(forceUpdate).catch(() => {});
+  }, [authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +191,7 @@ export default function AdminPage() {
     setNudgeOffsets(offsets);
   };
 
-  const saveEdit = (table?: keyof Database) => {
+  const saveEdit = async (table?: keyof Database) => {
     if (!editingId) return;
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
@@ -198,7 +202,7 @@ export default function AdminPage() {
     Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
-    updateRecord(t, editingId, parsed);
+    await updateRecord(t, editingId, parsed);
     setEditingId(null);
     setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
@@ -219,7 +223,7 @@ export default function AdminPage() {
     setNudgeOffsets({});
   };
 
-  const saveNew = (table?: keyof Database) => {
+  const saveNew = async (table?: keyof Database) => {
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
     const finalData = { ...editData };
@@ -229,17 +233,17 @@ export default function AdminPage() {
     Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
-    addRecord(t, parsed);
+    await addRecord(t, parsed);
     setNewRecord(false);
     setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
     else refresh();
   };
 
-  const handleDelete = (id: string, table?: keyof Database) => {
+  const handleDelete = async (id: string, table?: keyof Database) => {
     const t = table || activeTable;
     if (confirm("Delete this record?")) {
-      deleteRecord(t, id);
+      await deleteRecord(t, id);
       if (activeTab === "Home") forceUpdate();
       else refresh();
     }
@@ -497,10 +501,8 @@ export default function AdminPage() {
   const SettingsTab = () => {
     const settingsRecords = getAllRecords("settings");
 
-    const setAsDownload = (id: string) => {
-      settingsRecords.forEach(r => {
-        updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" });
-      });
+    const setAsDownload = async (id: string) => {
+      await Promise.all(settingsRecords.map(r => updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" })));
       forceUpdate();
     };
 
@@ -584,7 +586,10 @@ export default function AdminPage() {
   };
 
   const DownloadStats = () => {
-    const stats = getDownloadStats();
+    const [stats, setStats] = useState<Awaited<ReturnType<typeof getDownloadStats>>>([]);
+    useEffect(() => {
+      getDownloadStats().then(setStats).catch(() => setStats([]));
+    }, []);
     const grouped: Record<string, { title: string; count: number; lastDownload: string }> = {};
     stats.forEach((s) => {
       if (!grouped[s.paperId]) grouped[s.paperId] = { title: s.paperTitle, count: 0, lastDownload: s.timestamp };
@@ -625,12 +630,10 @@ export default function AdminPage() {
 
   // Customization tab with LIVE updates
   const CustomizeTab = () => {
-    const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>(() => {
-      try {
-        const raw = localStorage.getItem("portfolio_customizations");
-        return raw ? JSON.parse(raw) : {};
-      } catch { return {}; }
-    });
+    const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>({});
+    useEffect(() => {
+      getCustomizations().then(setCustomizations).catch(() => setCustomizations({}));
+    }, []);
 
     const pages = [
       { key: "projects", label: "Projects", boxes: [
@@ -662,18 +665,15 @@ export default function AdminPage() {
 
     const getValue = (page: string, box: string, def: number) => customizations[page]?.[box] ?? def;
 
-    const setValue = (page: string, box: string, val: number) => {
+    const setValue = async (page: string, box: string, val: number) => {
       const next = { ...customizations, [page]: { ...customizations[page], [box]: val } };
       setCustomizations(next);
-      localStorage.setItem("portfolio_customizations", JSON.stringify(next));
-      // Dispatch storage event for same-tab listeners
-      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: JSON.stringify(next) }));
+      await saveCustomizations(next);
     };
 
-    const resetAll = () => {
+    const resetAll = async () => {
       setCustomizations({});
-      localStorage.removeItem("portfolio_customizations");
-      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: "{}" }));
+      await saveCustomizations({});
     };
 
     return (
@@ -719,15 +719,16 @@ export default function AdminPage() {
 
   // Colours tab - 100+ palettes with full preview
   const ColoursTab = () => {
-    const [customTheme, setCustomTheme] = useState<Record<string, string>>(() => {
-      try {
-        const saved = localStorage.getItem("portfolio_theme");
-        return saved ? JSON.parse(saved) : {};
-      } catch { return {}; }
-    });
+    const [customTheme, setCustomTheme] = useState<Record<string, string>>({});
     const [activePalette, setActivePalette] = useState<string>("");
     const [previewPalette, setPreviewPalette] = useState<typeof colorPalettes[0] | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    useEffect(() => {
+      getAppearance().then(a => {
+        if (a.colors) setCustomTheme(a.colors);
+        if (a.activeThemeName) setActivePalette(a.activeThemeName);
+      }).catch(() => {});
+    }, []);
 
     const themeKeys = [
       { key: "background", label: "Background" },
@@ -748,7 +749,7 @@ export default function AdminPage() {
       setCustomTheme(palette.colors);
       setActivePalette(palette.name);
       setPreviewPalette(null);
-      localStorage.setItem("portfolio_theme", JSON.stringify(palette.colors));
+      saveAppearance({ colors: palette.colors, activeThemeName: palette.name });
       applyThemeToDOM(palette.colors);
     };
 
@@ -779,7 +780,7 @@ export default function AdminPage() {
       setCustomTheme({});
       setActivePalette("");
       setPreviewPalette(null);
-      localStorage.removeItem("portfolio_theme");
+      saveAppearance({ colors: {}, activeThemeName: "" });
       const root = document.documentElement;
       [...themeKeys.map(t => t.key), "glass-bg", "glass-border", "glow-color", "ring", "card-foreground", "popover", "popover-foreground", "sidebar-background", "sidebar-foreground", "sidebar-primary", "input"].forEach(key => root.style.removeProperty(`--${key}`));
       document.body.style.background = "";
@@ -788,7 +789,7 @@ export default function AdminPage() {
     const updateSingleColor = (key: string, value: string) => {
       const next = { ...customTheme, [key]: value };
       setCustomTheme(next);
-      localStorage.setItem("portfolio_theme", JSON.stringify(next));
+      saveAppearance({ colors: next, activeThemeName: "Custom" });
       applyThemeToDOM(next);
     };
 
@@ -878,7 +879,8 @@ export default function AdminPage() {
 
   // Fonts tab
   const FontsTab = () => {
-    const [activeFont, setActiveFont] = useState(() => localStorage.getItem("portfolio_font") || "Inter, Poppins, sans-serif");
+    const [activeFont, setActiveFont] = useState("Inter, Poppins, sans-serif");
+    useEffect(() => { getAppearance().then(a => a.font && setActiveFont(a.font)).catch(() => {}); }, []);
     const [searchQuery, setSearchQuery] = useState("");
     const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set(["Inter", "Poppins"]));
 
@@ -895,14 +897,14 @@ export default function AdminPage() {
       loadFont(fontName);
       const fontValue = `"${fontName}", sans-serif`;
       setActiveFont(fontValue);
-      localStorage.setItem("portfolio_font", fontValue);
+      saveAppearance({ font: fontValue });
       document.documentElement.style.setProperty("--font-family", fontValue);
       document.body.style.fontFamily = fontValue;
     };
 
     const resetFont = () => {
       setActiveFont("Inter, Poppins, sans-serif");
-      localStorage.removeItem("portfolio_font");
+      saveAppearance({ font: "" });
       document.documentElement.style.removeProperty("--font-family");
       document.body.style.fontFamily = "";
     };
@@ -951,17 +953,10 @@ export default function AdminPage() {
 
   const ThemesTab = () => {
     const [previewingTheme, setPreviewingTheme] = useState<ProfessionalTheme | null>(null);
-    const [activeThemeName, setActiveThemeName] = useState(() => localStorage.getItem("portfolio_active_theme") || "Default Dark Navy");
-    const [brightness, setBrightness] = useState(() => {
-      try { return Number(localStorage.getItem("portfolio_theme_brightness")) || 0; } catch { return 0; }
-    });
+    const [activeThemeName, setActiveThemeName] = useState("Default Dark Navy");
+    const [brightness, setBrightness] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
-    const [history, setHistory] = useState<(ProfessionalTheme & { appliedAt: string })[]>(() => {
-      try {
-        const raw = localStorage.getItem("portfolio_theme_history");
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
-    });
+    const [history, setHistory] = useState<(ProfessionalTheme & { appliedAt: string })[]>([]);
 
     const adjustBrightness = (colors: Record<string, string>, level: number): Record<string, string> => {
       if (level === 0) return colors;
@@ -988,25 +983,11 @@ export default function AdminPage() {
     };
 
     const getStoredThemeAsEntry = (): (ProfessionalTheme & { appliedAt: string }) | null => {
-      try {
-        const colorsRaw = localStorage.getItem("portfolio_theme");
-        if (!colorsRaw) return null;
-        return {
-          name: localStorage.getItem("portfolio_active_theme") || "Current",
-          category: "Custom",
-          description: "Previously applied",
-          colors: JSON.parse(colorsRaw),
-          font: localStorage.getItem("portfolio_font") || '"Inter", sans-serif',
-          radius: localStorage.getItem("portfolio_theme_radius") || "0.75rem",
-          template: localStorage.getItem("portfolio_layout_template") || "default",
-          appliedAt: new Date().toISOString(),
-        };
-      } catch { return null; }
+      return null;
     };
 
     const saveHistory = (next: (ProfessionalTheme & { appliedAt: string })[]) => {
       setHistory(next);
-      localStorage.setItem("portfolio_theme_history", JSON.stringify(next));
     };
 
     const applyTheme = (theme: ProfessionalTheme, trackHistory = true) => {
@@ -1018,20 +999,16 @@ export default function AdminPage() {
       setActiveThemeName(theme.name);
       setPreviewingTheme(null);
       const colors = adjustBrightness(theme.colors, brightness);
-      localStorage.setItem("portfolio_theme", JSON.stringify(colors));
-      localStorage.setItem("portfolio_font", theme.font);
-      localStorage.setItem("portfolio_theme_radius", theme.radius);
-      localStorage.setItem("portfolio_layout_template", theme.template);
-      localStorage.setItem("portfolio_active_theme", theme.name);
+      saveAppearance({ colors, font: theme.font, radius: theme.radius, template: theme.template, activeThemeName: theme.name, brightness });
     };
 
     const handleBrightnessChange = (val: number) => {
       setBrightness(val);
-      localStorage.setItem("portfolio_theme_brightness", String(val));
+
       const theme = professionalThemes.find(t => t.name === activeThemeName) || professionalThemes[0];
       const colors = adjustBrightness(theme.colors, val);
       applyThemeColors(colors);
-      localStorage.setItem("portfolio_theme", JSON.stringify(colors));
+      saveAppearance({ colors, activeThemeName, brightness: val });
     };
 
     const cancelPreview = () => {
@@ -1043,7 +1020,7 @@ export default function AdminPage() {
 
     const resetToDefault = () => {
       setBrightness(0);
-      localStorage.removeItem("portfolio_theme_brightness");
+
       applyTheme(professionalThemes[0]);
     };
 

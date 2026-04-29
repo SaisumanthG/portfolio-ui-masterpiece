@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Award, ImageIcon, Calendar, Share2, ExternalLink, Eye, X, Download } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
 import ShareFallbackDialog from "@/components/ShareFallbackDialog";
@@ -26,7 +26,7 @@ export default function CertificatesPage() {
 
   useEffect(() => {
     const loadCertificates = () => setCertificates(getAllRecords("certificates"));
-    loadCertificates();
+    fetchRecords("certificates").then(setCertificates).catch(() => setCertificates([]));
     return subscribeToDatabaseChanges(loadCertificates);
   }, []);
 
@@ -133,6 +133,7 @@ export default function CertificatesPage() {
                     <img
                       src={cardImage}
                       alt={cert.title as string}
+                      loading="lazy"
                       className="w-full h-full object-contain bg-secondary/30 transition-transform duration-700 group-hover:scale-105"
                       style={getImageStyle(cert, cert.previewImage ? "previewImage" : "image")}
                     />
