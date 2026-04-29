@@ -70,10 +70,6 @@ export async function fetchAllData(): Promise<Database> {
 }
 
 export function getAllRecords(table: TableName): DBRecord[] {
-  if (!cache[table]) {
-    cache[table] = getDefaultData()[table];
-    fetchRecords(table).then(() => emitChange(table)).catch(console.warn);
-  }
   return cache[table] || [];
 }
 
