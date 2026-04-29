@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Download, Share2, ExternalLink, Eye, X, ImageIcon, Mail } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { addDownloadStat, getAllRecords, type DBRecord } from "@/lib/database";
+import { addDownloadStat, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
 import ShareFallbackDialog from "@/components/ShareFallbackDialog";
@@ -32,11 +32,7 @@ export default function PapersPage() {
   useEffect(() => {
     const loadPapers = () => setPapers(getAllRecords("papers"));
     loadPapers();
-    const handler = (e: StorageEvent) => {
-      if (e.key === "portfolio_db") loadPapers();
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    return subscribeToDatabaseChanges(loadPapers);
   }, []);
 
   const getBlobUrl = useCallback((dataUrl: string) => {
