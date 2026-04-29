@@ -184,6 +184,7 @@ function emitDBChange(value: string) {
 
 function queueRealtimeBroadcast(value: string) {
   if (applyingRemoteSync) return;
+  startRealtimeSync();
   pendingRealtimeValue = value;
   if (realtimeTimer) window.clearTimeout(realtimeTimer);
   realtimeTimer = window.setTimeout(() => {
@@ -327,6 +328,7 @@ export function startRealtimeSync() {
     })
     .subscribe((status) => {
       realtimeReady = status === "SUBSCRIBED";
+      if (realtimeReady && pendingRealtimeValue) queueRealtimeBroadcast(pendingRealtimeValue);
     });
 }
 
