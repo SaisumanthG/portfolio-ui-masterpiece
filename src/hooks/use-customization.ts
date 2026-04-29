@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { getCustomizations, subscribeToDatabaseChanges } from "@/lib/database";
 
 export interface PageCustomization {
   cardHeight?: number;
@@ -18,42 +19,24 @@ const defaults: Record<string, PageCustomization> = {
 };
 
 export function useCustomization(page: string): PageCustomization {
-  const [values, setValues] = useState<PageCustomization>(() => {
-    try {
-      const raw = localStorage.getItem("portfolio_customizations");
-      if (raw) {
-        const all = JSON.parse(raw);
-        return { ...defaults[page], ...all[page] };
-      }
-    } catch {}
-    return defaults[page] || {};
-  });
+  const [values, setValues] = useState<PageCustomization>(() => defaults[page] || {});
 
   useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === "portfolio_customizations") {
-        try {
-          const all = JSON.parse(e.newValue || "{}");
-          setValues({ ...defaults[page], ...all[page] });
-        } catch {}
+    let mounted = true;
+    const load = async () => {
+      try {
+        const all = await getCustomizations();
+        if (mounted) setValues({ ...defaults[page], ...all[page] });
+      } catch {
+        if (mounted) setValues(defaults[page] || {});
       }
     };
-    window.addEventListener("storage", handler);
-
-    // Also poll for same-tab changes
-    const interval = setInterval(() => {
-      try {
-        const raw = localStorage.getItem("portfolio_customizations");
-        if (raw) {
-          const all = JSON.parse(raw);
-          setValues({ ...defaults[page], ...all[page] });
-        }
-      } catch {}
-    }, 500);
+    load();
+    const unsubscribe = subscribeToDatabaseChanges(load);
 
     return () => {
-      window.removeEventListener("storage", handler);
-      clearInterval(interval);
+      mounted = false;
+      unsubscribe();
     };
   }, [page]);
 
