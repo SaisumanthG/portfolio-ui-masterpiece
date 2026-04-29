@@ -187,7 +187,7 @@ export default function AdminPage() {
     setNudgeOffsets(offsets);
   };
 
-  const saveEdit = (table?: keyof Database) => {
+  const saveEdit = async (table?: keyof Database) => {
     if (!editingId) return;
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
@@ -198,7 +198,7 @@ export default function AdminPage() {
     Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
-    updateRecord(t, editingId, parsed);
+    await updateRecord(t, editingId, parsed);
     setEditingId(null);
     setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
@@ -219,7 +219,7 @@ export default function AdminPage() {
     setNudgeOffsets({});
   };
 
-  const saveNew = (table?: keyof Database) => {
+  const saveNew = async (table?: keyof Database) => {
     const t = table || activeTable;
     const parsed: Record<string, any> = {};
     const finalData = { ...editData };
@@ -229,17 +229,17 @@ export default function AdminPage() {
     Object.entries(finalData).forEach(([k, v]) => {
       try { parsed[k] = JSON.parse(v); } catch { parsed[k] = v; }
     });
-    addRecord(t, parsed);
+    await addRecord(t, parsed);
     setNewRecord(false);
     setNudgeOffsets({});
     if (activeTab === "Home") forceUpdate();
     else refresh();
   };
 
-  const handleDelete = (id: string, table?: keyof Database) => {
+  const handleDelete = async (id: string, table?: keyof Database) => {
     const t = table || activeTable;
     if (confirm("Delete this record?")) {
-      deleteRecord(t, id);
+      await deleteRecord(t, id);
       if (activeTab === "Home") forceUpdate();
       else refresh();
     }
