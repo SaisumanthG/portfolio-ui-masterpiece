@@ -31,7 +31,7 @@ export default function PapersPage() {
 
   useEffect(() => {
     const loadPapers = () => setPapers(getAllRecords("papers"));
-    loadPapers();
+    fetchRecords("papers").then(setPapers).catch(() => setPapers([]));
     return subscribeToDatabaseChanges(loadPapers);
   }, []);
 
@@ -182,6 +182,7 @@ export default function PapersPage() {
                 <img
                   src={getDisplayImage(paper)}
                   alt={paper.title as string}
+                  loading="lazy"
                   className="w-full h-full rounded-lg object-contain shadow-sm"
                   style={getImageStyle(paper)}
                 />
