@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAllRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, type Database, type DBRecord } from "@/lib/database";
+import { getAllRecords, fetchRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, getCustomizations, saveCustomizations, getAppearance, saveAppearance, type Database, type DBRecord } from "@/lib/database";
 import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette, Type, History, LayoutTemplate } from "lucide-react";
 import { applyLayoutTemplate, applyThemeColors, applyThemeFont, applyThemeRadius, loadFontIfNeeded } from "@/lib/theme";
 import { professionalThemes, type ProfessionalTheme } from "@/lib/professional-themes";
@@ -148,9 +148,9 @@ export default function AdminPage() {
   });
   const [nudgeOffsets, setNudgeOffsets] = useState<Record<string, { x: number; y: number; zoom: number }>>({});
 
-  const refresh = () => {
+  const refresh = async () => {
     if (activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") {
-      setRecords(getAllRecords(activeTable));
+      setRecords(await fetchRecords(activeTable));
     }
   };
 
