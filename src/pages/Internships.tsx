@@ -11,7 +11,10 @@ export default function InternshipsPage() {
 
   useEffect(() => {
     const loadInternships = () => setInternships(getAllRecords("internships"));
-    loadInternships();
+    fetchRecords("internships").then((rows) => {
+      setInternships(rows);
+      setActiveIndex(0);
+    }).catch(() => setInternships([]));
     return subscribeToDatabaseChanges(loadInternships);
   }, []);
 
@@ -72,6 +75,7 @@ export default function InternshipsPage() {
                   <img
                     src={current.image}
                     alt={current.company}
+                    loading="lazy"
                     className="w-full h-full object-cover bg-secondary/30"
                     style={current.imageNudge ? { objectPosition: `${50 + Number((current.imageNudge as string).split(",")[0])}% ${50 + Number((current.imageNudge as string).split(",")[1])}%` } : undefined}
                   />
