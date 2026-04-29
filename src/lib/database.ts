@@ -191,7 +191,11 @@ function queueRealtimeBroadcast(value: string) {
     const payload = pendingRealtimeValue;
     pendingRealtimeValue = null;
     realtimeTimer = null;
-    if (!payload || !realtimeReady || !realtimeChannel) return;
+    if (!payload) return;
+    if (!realtimeReady || !realtimeChannel) {
+      pendingRealtimeValue = payload;
+      return;
+    }
     realtimeChannel.send({
       type: "broadcast",
       event: REALTIME_EVENT,
