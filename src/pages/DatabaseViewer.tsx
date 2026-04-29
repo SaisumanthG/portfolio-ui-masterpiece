@@ -41,7 +41,7 @@ export default function DatabaseViewer() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         await importDatabase(reader.result as string);
         setRefreshKey((k) => k + 1);
@@ -52,7 +52,7 @@ export default function DatabaseViewer() {
     reader.readAsText(file);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm("Reset database to defaults? This cannot be undone.")) {
       await resetDatabase();
       setRefreshKey((k) => k + 1);
