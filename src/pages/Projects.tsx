@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { FolderOpen, ExternalLink, Github, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllRecords, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
@@ -17,7 +17,9 @@ export default function ProjectsPage() {
   const customization = useCustomization("projects");
 
   useEffect(() => {
-    setProjects(getAllRecords("projects"));
+    const loadProjects = () => setProjects(getAllRecords("projects"));
+    loadProjects();
+    return subscribeToDatabaseChanges(loadProjects);
   }, []);
 
   const folderColors = ["text-primary/70", "text-amber-500/70", "text-emerald-500/70", "text-rose-500/70", "text-cyan-500/70"];
