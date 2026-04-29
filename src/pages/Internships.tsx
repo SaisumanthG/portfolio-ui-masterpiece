@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Building2, Globe, ExternalLink, Github } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getAllRecords, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 export default function InternshipsPage() {
@@ -10,7 +10,9 @@ export default function InternshipsPage() {
   const customization = useCustomization("internships");
 
   useEffect(() => {
-    setInternships(getAllRecords("internships"));
+    const loadInternships = () => setInternships(getAllRecords("internships"));
+    loadInternships();
+    return subscribeToDatabaseChanges(loadInternships);
   }, []);
 
   if (internships.length === 0) return null;

@@ -1,4 +1,5 @@
-// Offline localStorage-based database
+// Offline localStorage-based database with realtime broadcast syncing
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DBRecord {
   id: string;
@@ -34,6 +35,28 @@ const DB_KEY = "portfolio_db";
 const LARGE_FIELD_LIMIT = 50000;
 const FALLBACK_FIELD_LIMIT = 12000;
 const MIN_FIELD_LIMIT = 1000;
+const DB_CHANGE_EVENT = "portfolio-db-updated";
+const REALTIME_CHANNEL = "portfolio-db-live-sync";
+const REALTIME_EVENT = "portfolio_db_update";
+
+const CLIENT_ID = (() => {
+  try {
+    const existing = sessionStorage.getItem("portfolio_sync_client_id");
+    if (existing) return existing;
+    const next = generateId();
+    sessionStorage.setItem("portfolio_sync_client_id", next);
+    return next;
+  } catch {
+    return Math.random().toString(36).slice(2);
+  }
+})();
+
+let applyingRemoteSync = false;
+let realtimeReady = false;
+let realtimeStarted = false;
+let pendingRealtimeValue: string | null = null;
+let realtimeTimer: number | null = null;
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
 type StoredDatabase = Database & { downloadStats?: DownloadStat[] };
 
@@ -154,11 +177,39 @@ function isQuotaError(error: unknown) {
   return error instanceof DOMException && (error.name === "QuotaExceededError" || error.code === 22);
 }
 
+function emitDBChange(value: string) {
+  window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
+  window.dispatchEvent(new CustomEvent(DB_CHANGE_EVENT, { detail: value }));
+}
+
+function queueRealtimeBroadcast(value: string) {
+  if (applyingRemoteSync) return;
+  startRealtimeSync();
+  pendingRealtimeValue = value;
+  if (realtimeTimer) window.clearTimeout(realtimeTimer);
+  realtimeTimer = window.setTimeout(() => {
+    const payload = pendingRealtimeValue;
+    pendingRealtimeValue = null;
+    realtimeTimer = null;
+    if (!payload) return;
+    if (!realtimeReady || !realtimeChannel) {
+      pendingRealtimeValue = payload;
+      return;
+    }
+    realtimeChannel.send({
+      type: "broadcast",
+      event: REALTIME_EVENT,
+      payload: { value: payload, clientId: CLIENT_ID, updatedAt: Date.now() },
+    });
+  }, 80);
+}
+
 function writeStorage(value: string, clearExisting = false) {
   try {
     if (clearExisting) localStorage.removeItem(DB_KEY);
     localStorage.setItem(DB_KEY, value);
-    window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
+    emitDBChange(value);
+    queueRealtimeBroadcast(value);
     return true;
   } catch (error) {
     if (!isQuotaError(error)) console.warn("Unable to save portfolio database", error);
@@ -246,6 +297,43 @@ export function exportDatabase(): string {
 export function importDatabase(json: string) {
   const data = JSON.parse(json);
   saveDB(data);
+}
+
+export function subscribeToDatabaseChanges(callback: () => void) {
+  const handler = () => callback();
+  const storageHandler = (event: StorageEvent) => {
+    if (event.key === DB_KEY) callback();
+  };
+  window.addEventListener(DB_CHANGE_EVENT, handler);
+  window.addEventListener("storage", storageHandler);
+  startRealtimeSync();
+  return () => {
+    window.removeEventListener(DB_CHANGE_EVENT, handler);
+    window.removeEventListener("storage", storageHandler);
+  };
+}
+
+export function startRealtimeSync() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  realtimeChannel = supabase
+    .channel(REALTIME_CHANNEL, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: REALTIME_EVENT }, ({ payload }) => {
+      if (!payload?.value || payload.clientId === CLIENT_ID) return;
+      try {
+        applyingRemoteSync = true;
+        localStorage.setItem(DB_KEY, payload.value);
+        emitDBChange(payload.value);
+      } catch (error) {
+        if (!isQuotaError(error)) console.warn("Unable to apply live portfolio update", error);
+      } finally {
+        applyingRemoteSync = false;
+      }
+    })
+    .subscribe((status) => {
+      realtimeReady = status === "SUBSCRIBED";
+      if (realtimeReady && pendingRealtimeValue) queueRealtimeBroadcast(pendingRealtimeValue);
+    });
 }
 
 export function getDownloadStats(): DownloadStat[] {

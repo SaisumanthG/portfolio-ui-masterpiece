@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Github } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllRecords, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
@@ -17,7 +17,9 @@ export default function HackathonsPage() {
   const customization = useCustomization("hackathons");
 
   useEffect(() => {
-    setHackathons(getAllRecords("hackathons"));
+    const loadHackathons = () => setHackathons(getAllRecords("hackathons"));
+    loadHackathons();
+    return subscribeToDatabaseChanges(loadHackathons);
   }, []);
 
   return (

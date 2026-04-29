@@ -284,10 +284,10 @@ export default function AdminPage() {
   const zoom = (field: string, dir: "in" | "out") => {
     setNudgeOffsets(prev => {
       const current = prev[field] || { x: 0, y: 0, zoom: 1 };
-      const step = 0.1;
+    const step = 0.1;
       const next = { ...current };
-      if (dir === "in") next.zoom = Math.min(3, +(current.zoom + step).toFixed(2));
-      if (dir === "out") next.zoom = Math.max(0.5, +(current.zoom - step).toFixed(2));
+      if (dir === "in") next.zoom = +(current.zoom + step).toFixed(2);
+      if (dir === "out") next.zoom = Math.max(0.1, +(current.zoom - step).toFixed(2));
       return { ...prev, [field]: next };
     });
   };
@@ -359,10 +359,11 @@ export default function AdminPage() {
                   <img
                     src={value}
                     alt="Preview"
-                    className={`w-full h-full ${shouldContainImage(field) ? "object-contain p-2" : "object-cover"}`}
+                    className={`w-full h-full ${shouldContainImage(field) ? "object-contain" : "object-cover"}`}
                     style={{
                       objectPosition: `${50 + offset.x}% ${50 + offset.y}%`,
                       transform: `scale(${offset.zoom})`,
+                      transformOrigin: `${50 + offset.x}% ${50 + offset.y}%`,
                     }}
                   />
                 </div>

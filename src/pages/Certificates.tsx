@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Award, ImageIcon, Calendar, Share2, ExternalLink, Eye, X, Download } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllRecords, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
 import ShareFallbackDialog from "@/components/ShareFallbackDialog";
@@ -25,7 +25,9 @@ export default function CertificatesPage() {
   const customization = useCustomization("certificates");
 
   useEffect(() => {
-    setCertificates(getAllRecords("certificates"));
+    const loadCertificates = () => setCertificates(getAllRecords("certificates"));
+    loadCertificates();
+    return subscribeToDatabaseChanges(loadCertificates);
   }, []);
 
   const normalizeExternalUrl = (value?: string) => {
