@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { User, Download, Github, Code2, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { fetchRecords, getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
+import { fetchAllData, getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 import { toast } from "sonner";
 
@@ -70,7 +70,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    loadHomeData();
+    fetchAllData().then(loadHomeData).catch(() => {});
     return subscribeToDatabaseChanges(loadHomeData);
   }, []);
 
@@ -238,7 +238,7 @@ export default function HomePage() {
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
                     {profile.logoImage ? (
-                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain" style={getNudgeStyle(profile.logoImageNudge)} />
+                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain" style={{ objectPosition: "center", transform: "none" }} />
                     ) : (
                       <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
                     )}
@@ -276,7 +276,7 @@ export default function HomePage() {
                       style={{ height: customization.collegeImageHeight || 256 }}
                     >
                       {currentSlide.image ? (
-                        <img src={currentSlide.image} alt={currentSlide.title} className="w-full h-full object-contain" style={getNudgeStyle(currentSlide.imageNudge)} />
+                        <img src={currentSlide.image} alt={currentSlide.title} loading="lazy" className="w-full h-full object-contain" style={getNudgeStyle(currentSlide.imageNudge)} />
                       ) : (
                         <span className="text-muted-foreground/40 text-sm">{selectedYear} - Slide {yearContentIndex + 1}</span>
                       )}
