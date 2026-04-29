@@ -626,12 +626,10 @@ export default function AdminPage() {
 
   // Customization tab with LIVE updates
   const CustomizeTab = () => {
-    const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>(() => {
-      try {
-        const raw = localStorage.getItem("portfolio_customizations");
-        return raw ? JSON.parse(raw) : {};
-      } catch { return {}; }
-    });
+    const [customizations, setCustomizations] = useState<Record<string, Record<string, number>>>({});
+    useEffect(() => {
+      getCustomizations().then(setCustomizations).catch(() => setCustomizations({}));
+    }, []);
 
     const pages = [
       { key: "projects", label: "Projects", boxes: [
@@ -663,18 +661,15 @@ export default function AdminPage() {
 
     const getValue = (page: string, box: string, def: number) => customizations[page]?.[box] ?? def;
 
-    const setValue = (page: string, box: string, val: number) => {
+    const setValue = async (page: string, box: string, val: number) => {
       const next = { ...customizations, [page]: { ...customizations[page], [box]: val } };
       setCustomizations(next);
-      localStorage.setItem("portfolio_customizations", JSON.stringify(next));
-      // Dispatch storage event for same-tab listeners
-      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: JSON.stringify(next) }));
+      await saveCustomizations(next);
     };
 
-    const resetAll = () => {
+    const resetAll = async () => {
       setCustomizations({});
-      localStorage.removeItem("portfolio_customizations");
-      window.dispatchEvent(new StorageEvent("storage", { key: "portfolio_customizations", newValue: "{}" }));
+      await saveCustomizations({});
     };
 
     return (
