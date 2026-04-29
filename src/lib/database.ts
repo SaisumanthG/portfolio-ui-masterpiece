@@ -177,11 +177,34 @@ function isQuotaError(error: unknown) {
   return error instanceof DOMException && (error.name === "QuotaExceededError" || error.code === 22);
 }
 
+function emitDBChange(value: string) {
+  window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
+  window.dispatchEvent(new CustomEvent(DB_CHANGE_EVENT, { detail: value }));
+}
+
+function queueRealtimeBroadcast(value: string) {
+  if (applyingRemoteSync) return;
+  pendingRealtimeValue = value;
+  if (realtimeTimer) window.clearTimeout(realtimeTimer);
+  realtimeTimer = window.setTimeout(() => {
+    const payload = pendingRealtimeValue;
+    pendingRealtimeValue = null;
+    realtimeTimer = null;
+    if (!payload || !realtimeReady || !realtimeChannel) return;
+    realtimeChannel.send({
+      type: "broadcast",
+      event: REALTIME_EVENT,
+      payload: { value: payload, clientId: CLIENT_ID, updatedAt: Date.now() },
+    });
+  }, 80);
+}
+
 function writeStorage(value: string, clearExisting = false) {
   try {
     if (clearExisting) localStorage.removeItem(DB_KEY);
     localStorage.setItem(DB_KEY, value);
-    window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
+    emitDBChange(value);
+    queueRealtimeBroadcast(value);
     return true;
   } catch (error) {
     if (!isQuotaError(error)) console.warn("Unable to save portfolio database", error);
@@ -269,6 +292,38 @@ export function exportDatabase(): string {
 export function importDatabase(json: string) {
   const data = JSON.parse(json);
   saveDB(data);
+}
+
+export function subscribeToDatabaseChanges(callback: () => void) {
+  const handler = () => callback();
+  window.addEventListener(DB_CHANGE_EVENT, handler);
+  window.addEventListener("storage", (event) => {
+    if (event.key === DB_KEY) callback();
+  });
+  startRealtimeSync();
+  return () => window.removeEventListener(DB_CHANGE_EVENT, handler);
+}
+
+export function startRealtimeSync() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  realtimeChannel = supabase
+    .channel(REALTIME_CHANNEL, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: REALTIME_EVENT }, ({ payload }) => {
+      if (!payload?.value || payload.clientId === CLIENT_ID) return;
+      try {
+        applyingRemoteSync = true;
+        localStorage.setItem(DB_KEY, payload.value);
+        emitDBChange(payload.value);
+      } catch (error) {
+        if (!isQuotaError(error)) console.warn("Unable to apply live portfolio update", error);
+      } finally {
+        applyingRemoteSync = false;
+      }
+    })
+    .subscribe((status) => {
+      realtimeReady = status === "SUBSCRIBED";
+    });
 }
 
 export function getDownloadStats(): DownloadStat[] {
