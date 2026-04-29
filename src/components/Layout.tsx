@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Home, FolderOpen, Building2, Trophy, FileText, Award } from "lucide-react";
 import PingMe from "./PingMe";
-import { getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
+import { fetchRecords, getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
 
 const navItems = [
   { title: "Home", path: "/home", icon: Home },

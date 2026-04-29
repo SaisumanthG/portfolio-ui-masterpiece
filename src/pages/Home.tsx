@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { User, Download, Github, Code2, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
+import { fetchRecords, getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 import { toast } from "sonner";
 

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { FolderOpen, ExternalLink, Github, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
