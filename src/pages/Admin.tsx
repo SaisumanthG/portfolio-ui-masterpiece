@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAllRecords, fetchRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, getCustomizations, saveCustomizations, getAppearance, saveAppearance, type Database, type DBRecord } from "@/lib/database";
+import { getAllRecords, fetchAllData, fetchRecords, addRecord, updateRecord, deleteRecord, getDownloadStats, getCustomizations, saveCustomizations, getAppearance, saveAppearance, type Database, type DBRecord } from "@/lib/database";
 import { Upload, FileUp, ChevronDown, ChevronRight, BarChart3, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Check, ZoomIn, ZoomOut, RotateCcw, Palette, Type, History, LayoutTemplate } from "lucide-react";
 import { applyLayoutTemplate, applyThemeColors, applyThemeFont, applyThemeRadius, loadFontIfNeeded } from "@/lib/theme";
 import { professionalThemes, type ProfessionalTheme } from "@/lib/professional-themes";
@@ -157,6 +157,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (authenticated && activeTab !== "Home" && activeTab !== "Stats" && activeTab !== "Customize" && activeTab !== "Colours" && activeTab !== "Fonts" && activeTab !== "Themes") refresh();
   }, [activeTable, authenticated, activeTab]);
+
+  useEffect(() => {
+    if (authenticated && activeTab === "Home") fetchAllData().then(forceUpdate).catch(() => {});
+  }, [authenticated, activeTab]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
