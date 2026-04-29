@@ -26,7 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setBrandLogo((profile?.logoImage as string) || "");
       setBrandLogoNudge((profile?.logoImageNudge as string) || "");
     };
-    loadLogo();
+    fetchRecords("homeProfile").then(loadLogo).catch(() => {});
     return subscribeToDatabaseChanges(loadLogo);
   }, []);
 
@@ -56,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {!sidebarOpen && (
             <div className="flex items-center gap-2 portfolio-logo">
               <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center font-heading font-bold text-primary text-sm overflow-hidden">
-                {brandLogo ? <img src={brandLogo} alt="Portfolio logo" className="w-full h-full object-contain" style={getNudgeStyle(brandLogoNudge)} /> : "S"}
+                {brandLogo ? <img src={brandLogo} alt="Portfolio logo" className="w-full h-full object-contain" style={{ objectPosition: "center", transform: "none" }} /> : "S"}
               </div>
               <span className="text-sm font-heading font-semibold text-foreground hidden sm:block">
                 Saisumanth_Portfolio
