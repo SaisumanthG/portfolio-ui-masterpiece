@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { getAllRecords, exportDatabase, importDatabase, resetDatabase, type Database } from "@/lib/database";
+import { fetchRecords, exportDatabase, importDatabase, resetDatabase, type Database } from "@/lib/database";
 
 const tables: (keyof Database)[] = ["projects", "internships", "hackathons", "papers", "certificates", "settings"];
 
@@ -14,7 +14,7 @@ export default function DatabaseViewer() {
 
   useEffect(() => {
     if (authenticated) {
-      setData(getAllRecords(activeTable));
+      fetchRecords(activeTable).then(setData).catch(() => setData([]));
     }
   }, [activeTable, authenticated, refreshKey]);
 
@@ -27,8 +27,8 @@ export default function DatabaseViewer() {
     }
   };
 
-  const handleExport = () => {
-    const blob = new Blob([exportDatabase()], { type: "application/json" });
+  const handleExport = async () => {
+    const blob = new Blob([await exportDatabase()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -43,7 +43,7 @@ export default function DatabaseViewer() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        importDatabase(reader.result as string);
+        await importDatabase(reader.result as string);
         setRefreshKey((k) => k + 1);
       } catch {
         alert("Invalid JSON file");
@@ -54,7 +54,7 @@ export default function DatabaseViewer() {
 
   const handleReset = () => {
     if (confirm("Reset database to defaults? This cannot be undone.")) {
-      resetDatabase();
+      await resetDatabase();
       setRefreshKey((k) => k + 1);
     }
   };
