@@ -26,7 +26,7 @@ export default function CertificatesPage() {
 
   useEffect(() => {
     const loadCertificates = () => setCertificates(getAllRecords("certificates"));
-    loadCertificates();
+    fetchRecords("certificates").then(setCertificates).catch(() => setCertificates([]));
     return subscribeToDatabaseChanges(loadCertificates);
   }, []);
 
@@ -133,6 +133,7 @@ export default function CertificatesPage() {
                     <img
                       src={cardImage}
                       alt={cert.title as string}
+                      loading="lazy"
                       className="w-full h-full object-contain bg-secondary/30 transition-transform duration-700 group-hover:scale-105"
                       style={getImageStyle(cert, cert.previewImage ? "previewImage" : "image")}
                     />
