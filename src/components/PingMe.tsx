@@ -6,19 +6,18 @@ const whatsappMessage = encodeURIComponent("Hi, I came across your portfolio and
 const whatsappNumber = "919025208253";
 const openWhatsApp = () => {
   const appUrl = `whatsapp://send?phone=${whatsappNumber}&text=${whatsappMessage}`;
-  const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${whatsappMessage}`;
-  const mobileUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+  const fallbackUrl = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    ? `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
+    : `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${whatsappMessage}`;
   const isMobile = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    window.location.href = appUrl;
-    window.setTimeout(() => {
-      window.location.href = mobileUrl;
-    }, 900);
-    return;
-  }
-
-  window.open(webUrl, "_blank", "noopener,noreferrer");
+  window.location.href = appUrl;
+  window.setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      if (isMobile) window.location.href = fallbackUrl;
+      else window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+    }
+  }, 1200);
 };
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
