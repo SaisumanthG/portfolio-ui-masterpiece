@@ -1,4 +1,5 @@
-// Offline localStorage-based database
+// Offline localStorage-based database with realtime broadcast syncing
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DBRecord {
   id: string;
@@ -34,6 +35,28 @@ const DB_KEY = "portfolio_db";
 const LARGE_FIELD_LIMIT = 50000;
 const FALLBACK_FIELD_LIMIT = 12000;
 const MIN_FIELD_LIMIT = 1000;
+const DB_CHANGE_EVENT = "portfolio-db-updated";
+const REALTIME_CHANNEL = "portfolio-db-live-sync";
+const REALTIME_EVENT = "portfolio_db_update";
+
+const CLIENT_ID = (() => {
+  try {
+    const existing = sessionStorage.getItem("portfolio_sync_client_id");
+    if (existing) return existing;
+    const next = generateId();
+    sessionStorage.setItem("portfolio_sync_client_id", next);
+    return next;
+  } catch {
+    return Math.random().toString(36).slice(2);
+  }
+})();
+
+let applyingRemoteSync = false;
+let realtimeReady = false;
+let realtimeStarted = false;
+let pendingRealtimeValue: string | null = null;
+let realtimeTimer: number | null = null;
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
 type StoredDatabase = Database & { downloadStats?: DownloadStat[] };
 
