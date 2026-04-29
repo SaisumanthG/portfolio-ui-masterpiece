@@ -715,15 +715,16 @@ export default function AdminPage() {
 
   // Colours tab - 100+ palettes with full preview
   const ColoursTab = () => {
-    const [customTheme, setCustomTheme] = useState<Record<string, string>>(() => {
-      try {
-        const saved = localStorage.getItem("portfolio_theme");
-        return saved ? JSON.parse(saved) : {};
-      } catch { return {}; }
-    });
+    const [customTheme, setCustomTheme] = useState<Record<string, string>>({});
     const [activePalette, setActivePalette] = useState<string>("");
     const [previewPalette, setPreviewPalette] = useState<typeof colorPalettes[0] | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    useEffect(() => {
+      getAppearance().then(a => {
+        if (a.colors) setCustomTheme(a.colors);
+        if (a.activeThemeName) setActivePalette(a.activeThemeName);
+      }).catch(() => {});
+    }, []);
 
     const themeKeys = [
       { key: "background", label: "Background" },
@@ -744,7 +745,7 @@ export default function AdminPage() {
       setCustomTheme(palette.colors);
       setActivePalette(palette.name);
       setPreviewPalette(null);
-      localStorage.setItem("portfolio_theme", JSON.stringify(palette.colors));
+      saveAppearance({ colors: palette.colors, activeThemeName: palette.name });
       applyThemeToDOM(palette.colors);
     };
 
@@ -775,7 +776,7 @@ export default function AdminPage() {
       setCustomTheme({});
       setActivePalette("");
       setPreviewPalette(null);
-      localStorage.removeItem("portfolio_theme");
+      saveAppearance({ colors: {}, activeThemeName: "" });
       const root = document.documentElement;
       [...themeKeys.map(t => t.key), "glass-bg", "glass-border", "glow-color", "ring", "card-foreground", "popover", "popover-foreground", "sidebar-background", "sidebar-foreground", "sidebar-primary", "input"].forEach(key => root.style.removeProperty(`--${key}`));
       document.body.style.background = "";
@@ -784,7 +785,7 @@ export default function AdminPage() {
     const updateSingleColor = (key: string, value: string) => {
       const next = { ...customTheme, [key]: value };
       setCustomTheme(next);
-      localStorage.setItem("portfolio_theme", JSON.stringify(next));
+      saveAppearance({ colors: next, activeThemeName: "Custom" });
       applyThemeToDOM(next);
     };
 
