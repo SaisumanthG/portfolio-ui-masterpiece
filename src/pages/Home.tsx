@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { User, Download, Github, Code2, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { getAllRecords } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 import { toast } from "sonner";
 
@@ -71,11 +71,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadHomeData();
-    const handler = (e: StorageEvent) => {
-      if (e.key === "portfolio_db") loadHomeData();
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    return subscribeToDatabaseChanges(loadHomeData);
   }, []);
 
   const currentYearItems = collegeSlides.filter(s => s.year === selectedYear);
@@ -128,6 +124,7 @@ export default function HomePage() {
     return {
       objectPosition: `${50 + (x || 0)}% ${50 + (y || 0)}%`,
       transform: `scale(${zoom || 1})`,
+      transformOrigin: `${50 + (x || 0)}% ${50 + (y || 0)}%`,
     };
   };
 
@@ -241,7 +238,7 @@ export default function HomePage() {
                 <div className="glass-card p-6 text-center">
                   <div className="w-20 h-20 rounded-full border border-muted-foreground/30 flex items-center justify-center mx-auto mb-3 overflow-hidden" style={{ background: "radial-gradient(circle, hsl(230, 40%, 18%) 0%, hsl(225, 45%, 12%) 70%)" }}>
                     {profile.logoImage ? (
-                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain p-2" style={getNudgeStyle(profile.logoImageNudge)} />
+                      <img src={profile.logoImage} alt="Panimalar Engineering College logo" className="w-full h-full object-contain" style={getNudgeStyle(profile.logoImageNudge)} />
                     ) : (
                       <span className="text-muted-foreground font-heading font-bold text-sm">PEC</span>
                     )}
