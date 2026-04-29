@@ -497,10 +497,8 @@ export default function AdminPage() {
   const SettingsTab = () => {
     const settingsRecords = getAllRecords("settings");
 
-    const setAsDownload = (id: string) => {
-      settingsRecords.forEach(r => {
-        updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" });
-      });
+    const setAsDownload = async (id: string) => {
+      await Promise.all(settingsRecords.map(r => updateRecord("settings", r.id, { active: r.id === id ? "true" : "false" })));
       forceUpdate();
     };
 
@@ -584,7 +582,10 @@ export default function AdminPage() {
   };
 
   const DownloadStats = () => {
-    const stats = getDownloadStats();
+    const [stats, setStats] = useState<Awaited<ReturnType<typeof getDownloadStats>>>([]);
+    useEffect(() => {
+      getDownloadStats().then(setStats).catch(() => setStats([]));
+    }, []);
     const grouped: Record<string, { title: string; count: number; lastDownload: string }> = {};
     stats.forEach((s) => {
       if (!grouped[s.paperId]) grouped[s.paperId] = { title: s.paperTitle, count: 0, lastDownload: s.timestamp };
