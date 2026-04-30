@@ -1,5 +1,5 @@
-// API-backed portfolio database with Socket.IO realtime syncing
-import { io, type Socket } from "socket.io-client";
+// Offline localStorage-based database with realtime broadcast syncing
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DBRecord {
   id: string;
@@ -31,170 +31,349 @@ export interface DownloadStat {
   timestamp: string;
 }
 
-export type TableName = keyof Database;
+const DB_KEY = "portfolio_db";
+const LARGE_FIELD_LIMIT = 50000;
+const FALLBACK_FIELD_LIMIT = 12000;
+const MIN_FIELD_LIMIT = 1000;
+const DB_CHANGE_EVENT = "portfolio-db-updated";
+const REALTIME_CHANNEL = "portfolio-db-live-sync";
+const REALTIME_EVENT = "portfolio_db_update";
 
-const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:4000").replace(/\/$/, "");
-const DB_CHANGE_EVENT = "portfolio-api-updated";
+const CLIENT_ID = (() => {
+  try {
+    const existing = sessionStorage.getItem("portfolio_sync_client_id");
+    if (existing) return existing;
+    const next = generateId();
+    sessionStorage.setItem("portfolio_sync_client_id", next);
+    return next;
+  } catch {
+    return Math.random().toString(36).slice(2);
+  }
+})();
 
-let cache: Partial<Database & { downloadStats: DownloadStat[]; customizations: Record<string, Record<string, number>>; appearance: Record<string, any> }> = {};
-let socket: Socket | null = null;
-let socketStarted = false;
+let applyingRemoteSync = false;
+let realtimeReady = false;
+let realtimeStarted = false;
+let pendingRealtimeValue: string | null = null;
+let realtimeTimer: number | null = null;
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+type StoredDatabase = Database & { downloadStats?: DownloadStat[] };
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-function emitChange(table?: string) {
-  window.dispatchEvent(new CustomEvent(DB_CHANGE_EVENT, { detail: table }));
+function getDB(): Database {
+  const raw = localStorage.getItem(DB_KEY);
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    const defaults = getDefaultData();
+    let needsSave = false;
+
+    // Ensure all tables exist (handles old DBs missing new tables)
+    for (const key of Object.keys(defaults) as (keyof Database)[]) {
+      if (!parsed[key]) {
+        parsed[key] = defaults[key];
+        needsSave = true;
+      }
+    }
+
+    // Backfill papers fields
+    if (Array.isArray(parsed.papers)) {
+      parsed.papers = parsed.papers.map((paper: Record<string, any>) => {
+        const next = {
+          ...paper,
+          previewImage: paper.previewImage ?? "",
+          file: paper.file ?? paper.pdf ?? "",
+          pdf: paper.pdf ?? paper.file ?? "",
+          publicationUrl: paper.publicationUrl ?? "",
+        };
+        if (
+          paper.previewImage === undefined ||
+          paper.file === undefined ||
+          paper.pdf === undefined ||
+          paper.publicationUrl === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
+    // Backfill projects with a separate live/demo URL for the View Project button.
+    if (Array.isArray(parsed.projects)) {
+      parsed.projects = parsed.projects.map((project: Record<string, any>) => {
+        if (project.projectUrl === undefined) needsSave = true;
+        return {
+          ...project,
+          projectUrl: project.projectUrl ?? project.viewProject ?? project.liveUrl ?? project.github ?? "",
+        };
+      });
+    }
+
+    // Backfill certificates fields
+    if (Array.isArray(parsed.certificates)) {
+      parsed.certificates = parsed.certificates.map((cert: Record<string, any>) => {
+        const verification = cert.verificationUrl ?? cert.credlyUrl ?? cert.urlPath ?? "";
+        const next = {
+          ...cert,
+          previewImage: cert.previewImage ?? "",
+          viewImage: cert.viewImage ?? cert.previewImage ?? cert.image ?? "",
+          file: cert.file ?? "",
+          credlyUrl: cert.credlyUrl ?? verification,
+          verificationUrl: verification,
+          urlPath: cert.urlPath ?? verification,
+        };
+        if (
+          cert.previewImage === undefined ||
+          cert.viewImage === undefined ||
+          cert.file === undefined ||
+          cert.credlyUrl === undefined ||
+          cert.verificationUrl === undefined ||
+          cert.urlPath === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
+    // Backfill home profile media fields for admin-managed hero and logo uploads.
+    if (Array.isArray(parsed.homeProfile)) {
+      parsed.homeProfile = parsed.homeProfile.map((profile: Record<string, any>) => {
+        const next = {
+          ...profile,
+          image: profile.image ?? "",
+          logoImage: profile.logoImage ?? profile.collegeImage ?? "",
+          collegeImage: profile.collegeImage ?? "",
+          imageNudge: profile.imageNudge ?? "",
+          logoImageNudge: profile.logoImageNudge ?? "",
+          collegeImageNudge: profile.collegeImageNudge ?? "",
+        };
+        if (
+          profile.image === undefined ||
+          profile.logoImage === undefined ||
+          profile.collegeImage === undefined ||
+          profile.imageNudge === undefined ||
+          profile.logoImageNudge === undefined ||
+          profile.collegeImageNudge === undefined
+        ) {
+          needsSave = true;
+        }
+        return next;
+      });
+    }
+
+    if (needsSave) saveDB(parsed);
+    return parsed;
+  }
+  const seed = getDefaultData();
+  saveDB(seed);
+  return seed;
 }
 
-async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return response.json();
+function isQuotaError(error: unknown) {
+  return error instanceof DOMException && (error.name === "QuotaExceededError" || error.code === 22);
 }
 
-export async function fetchRecords(table: TableName): Promise<DBRecord[]> {
-  const rows = await apiRequest<DBRecord[]>(`/api/${table}`);
-  cache[table] = rows;
-  return rows;
+function emitDBChange(value: string) {
+  window.dispatchEvent(new StorageEvent("storage", { key: DB_KEY, newValue: value }));
+  window.dispatchEvent(new CustomEvent(DB_CHANGE_EVENT, { detail: value }));
 }
 
-export async function fetchAllData(): Promise<Database> {
-  const data = await apiRequest<Database>("/api/data");
-  cache = { ...cache, ...data };
-  return data;
+function queueRealtimeBroadcast(value: string) {
+  if (applyingRemoteSync) return;
+  startRealtimeSync();
+  pendingRealtimeValue = value;
+  if (realtimeTimer) window.clearTimeout(realtimeTimer);
+  realtimeTimer = window.setTimeout(() => {
+    const payload = pendingRealtimeValue;
+    pendingRealtimeValue = null;
+    realtimeTimer = null;
+    if (!payload) return;
+    if (!realtimeReady || !realtimeChannel) {
+      pendingRealtimeValue = payload;
+      return;
+    }
+    realtimeChannel.send({
+      type: "broadcast",
+      event: REALTIME_EVENT,
+      payload: { value: payload, clientId: CLIENT_ID, updatedAt: Date.now() },
+    });
+  }, 80);
 }
 
-export function getAllRecords(table: TableName): DBRecord[] {
-  return cache[table] || [];
+function writeStorage(value: string, clearExisting = false) {
+  try {
+    if (clearExisting) localStorage.removeItem(DB_KEY);
+    localStorage.setItem(DB_KEY, value);
+    emitDBChange(value);
+    queueRealtimeBroadcast(value);
+    return true;
+  } catch (error) {
+    if (!isQuotaError(error)) console.warn("Unable to save portfolio database", error);
+    return false;
+  }
 }
 
-export function getRecord(table: TableName, id: string): DBRecord | undefined {
+function stripLargeStorageFields(db: StoredDatabase, limit = LARGE_FIELD_LIMIT): StoredDatabase {
+  const slim = JSON.parse(JSON.stringify(db));
+  for (const table of Object.keys(slim)) {
+    if (Array.isArray(slim[table])) {
+      slim[table] = slim[table].map((rec: any) => {
+        const cleaned = { ...rec };
+        for (const [k, v] of Object.entries(cleaned)) {
+          if (typeof v === "string" && v.length > limit) {
+            cleaned[k] = "";
+          }
+        }
+        return cleaned;
+      });
+    }
+  }
+  return slim;
+}
+
+function saveDB(db: StoredDatabase) {
+  const attempts = [
+    db,
+    stripLargeStorageFields(db, LARGE_FIELD_LIMIT),
+    stripLargeStorageFields(db, FALLBACK_FIELD_LIMIT),
+    stripLargeStorageFields(db, MIN_FIELD_LIMIT),
+  ];
+
+  for (const attempt of attempts) {
+    if (writeStorage(JSON.stringify(attempt))) return;
+  }
+
+  if (writeStorage(JSON.stringify(attempts[attempts.length - 1]), true)) return;
+  console.warn("Portfolio database could not fit in localStorage; large uploaded file data was skipped.");
+}
+
+export function getAllRecords(table: keyof Database): DBRecord[] {
+  const db = getDB();
+  return db[table] || [];
+}
+
+export function getRecord(table: keyof Database, id: string): DBRecord | undefined {
   return getAllRecords(table).find((r) => r.id === id);
 }
 
-export async function addRecord(table: TableName, data: Omit<DBRecord, "id">): Promise<DBRecord> {
-  const record = await apiRequest<DBRecord>(`/api/${table}`, { method: "POST", body: JSON.stringify(data) });
-  cache[table] = [...(cache[table] || []), record];
-  emitChange(table);
+export function addRecord(table: keyof Database, data: Omit<DBRecord, "id">): DBRecord {
+  const db = getDB();
+  const record = { ...data, id: generateId() };
+  db[table].push(record);
+  saveDB(db);
   return record;
 }
 
-export async function updateRecord(table: TableName, id: string, data: Partial<DBRecord>): Promise<DBRecord | null> {
-  const record = await apiRequest<DBRecord>(`/api/${table}/${id}`, { method: "PUT", body: JSON.stringify(data) });
-  cache[table] = (cache[table] || []).map((r) => (r.id === id ? record : r));
-  emitChange(table);
-  return record;
+export function updateRecord(table: keyof Database, id: string, data: Partial<DBRecord>): DBRecord | null {
+  const db = getDB();
+  const idx = db[table].findIndex((r) => r.id === id);
+  if (idx === -1) return null;
+  db[table][idx] = { ...db[table][idx], ...data };
+  saveDB(db);
+  return db[table][idx];
 }
 
-export async function deleteRecord(table: TableName, id: string): Promise<boolean> {
-  await apiRequest<{ ok: boolean }>(`/api/${table}/${id}`, { method: "DELETE" });
-  cache[table] = (cache[table] || []).filter((r) => r.id !== id);
-  emitChange(table);
+export function deleteRecord(table: keyof Database, id: string): boolean {
+  const db = getDB();
+  const idx = db[table].findIndex((r) => r.id === id);
+  if (idx === -1) return false;
+  db[table].splice(idx, 1);
+  saveDB(db);
   return true;
 }
 
-export async function resetDatabase() {
-  const data = await apiRequest<Database>("/api/admin/reset", { method: "POST" });
-  cache = { ...cache, ...data };
-  emitChange();
+export function resetDatabase() {
+  localStorage.removeItem(DB_KEY);
 }
 
-export async function exportDatabase(): Promise<string> {
-  const data = await fetchAllData();
-  return JSON.stringify(data, null, 2);
+export function exportDatabase(): string {
+  return JSON.stringify(getDB(), null, 2);
 }
 
-export async function importDatabase(json: string) {
+export function importDatabase(json: string) {
   const data = JSON.parse(json);
-  const imported = await apiRequest<Database>("/api/admin/import", { method: "POST", body: JSON.stringify(data) });
-  cache = { ...cache, ...imported };
-  emitChange();
+  saveDB(data);
 }
 
 export function subscribeToDatabaseChanges(callback: () => void) {
   const handler = () => callback();
+  const storageHandler = (event: StorageEvent) => {
+    if (event.key === DB_KEY) callback();
+  };
   window.addEventListener(DB_CHANGE_EVENT, handler);
+  window.addEventListener("storage", storageHandler);
   startRealtimeSync();
-  return () => window.removeEventListener(DB_CHANGE_EVENT, handler);
+  return () => {
+    window.removeEventListener(DB_CHANGE_EVENT, handler);
+    window.removeEventListener("storage", storageHandler);
+  };
 }
 
 export function startRealtimeSync() {
-  if (socketStarted) return;
-  socketStarted = true;
-  socket = io(API_BASE, { transports: ["websocket", "polling"] });
-  socket.on("portfolio:update", async ({ table }: { table?: TableName }) => {
-    try {
-      if (table) await fetchRecords(table);
-      else await fetchAllData();
-      emitChange(table);
-    } catch (error) {
-      console.warn("Unable to sync portfolio update", error);
-    }
-  });
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  realtimeChannel = supabase
+    .channel(REALTIME_CHANNEL, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: REALTIME_EVENT }, ({ payload }) => {
+      if (!payload?.value || payload.clientId === CLIENT_ID) return;
+      try {
+        applyingRemoteSync = true;
+        localStorage.setItem(DB_KEY, payload.value);
+        emitDBChange(payload.value);
+      } catch (error) {
+        if (!isQuotaError(error)) console.warn("Unable to apply live portfolio update", error);
+      } finally {
+        applyingRemoteSync = false;
+      }
+    })
+    .subscribe((status) => {
+      realtimeReady = status === "SUBSCRIBED";
+      if (realtimeReady && pendingRealtimeValue) queueRealtimeBroadcast(pendingRealtimeValue);
+    });
 }
 
-export async function getDownloadStats(): Promise<DownloadStat[]> {
-  const stats = await apiRequest<DownloadStat[]>("/api/download-stats");
-  cache.downloadStats = stats;
-  return stats;
+export function getDownloadStats(): DownloadStat[] {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StoredDatabase;
+    return Array.isArray(parsed.downloadStats) ? parsed.downloadStats : [];
+  } catch {
+    return [];
+  }
 }
 
-export async function addDownloadStat(paperId: string, paperTitle: string) {
-  const stat = await apiRequest<DownloadStat>("/api/download-stats", {
-    method: "POST",
-    body: JSON.stringify({ paperId, paperTitle }),
-  });
-  cache.downloadStats = [...(cache.downloadStats || []), stat].slice(-200);
-  return stat;
+export function addDownloadStat(paperId: string, paperTitle: string) {
+  const db = getDB() as StoredDatabase;
+  const currentStats = Array.isArray(db.downloadStats) ? db.downloadStats : [];
+  db.downloadStats = [
+    ...currentStats,
+    { id: generateId(), paperId, paperTitle, timestamp: new Date().toISOString() },
+  ].slice(-200);
+  saveDB(db);
 }
 
-export async function getCustomizations(): Promise<Record<string, Record<string, number>>> {
-  const data = await apiRequest<Record<string, Record<string, number>>>("/api/customizations");
-  cache.customizations = data;
-  return data;
-}
+// Import images as modules
+import projectStartup from "@/assets/project-startup.jpg";
+import projectMediguardian from "@/assets/project-mediguardian.jpg";
+import projectInterior from "@/assets/project-interior.jpg";
+import projectEsp32 from "@/assets/project-esp32.jpg";
+import projectShopping from "@/assets/project-shopping.jpg";
+import internshipAiDesign from "@/assets/internship-ai-design.jpg";
+import internshipAltruisty from "@/assets/internship-altruisty.jpg";
+import hackathonIdeathon from "@/assets/hackathon-ideathon.jpg";
+import hackathonInfosys from "@/assets/hackathon-infosys.jpg";
+import hackathonXyntra from "@/assets/hackathon-xyntra.jpg";
+import certNasscom from "@/assets/cert-nasscom.jpg";
+import certAws from "@/assets/cert-aws.jpg";
+import certNptel from "@/assets/cert-nptel.jpg";
+import certOracle from "@/assets/cert-oracle.jpg";
 
-export async function saveCustomizations(data: Record<string, Record<string, number>>) {
-  const saved = await apiRequest<Record<string, Record<string, number>>>("/api/customizations", { method: "PUT", body: JSON.stringify(data) });
-  cache.customizations = saved;
-  emitChange("customizations");
-  return saved;
-}
-
-export async function getAppearance(): Promise<Record<string, any>> {
-  const data = await apiRequest<Record<string, any>>("/api/appearance");
-  cache.appearance = data;
-  return data;
-}
-
-export async function saveAppearance(data: Record<string, any>) {
-  const saved = await apiRequest<Record<string, any>>("/api/appearance", { method: "PUT", body: JSON.stringify(data) });
-  cache.appearance = saved;
-  emitChange("appearance");
-  return saved;
-}
-
-const projectStartup = "/seed-assets/project-startup.jpg";
-const projectMediguardian = "/seed-assets/project-mediguardian.jpg";
-const projectInterior = "/seed-assets/project-interior.jpg";
-const projectEsp32 = "/seed-assets/project-esp32.jpg";
-const projectShopping = "/seed-assets/project-shopping.jpg";
-const internshipAiDesign = "/seed-assets/internship-ai-design.jpg";
-const internshipAltruisty = "/seed-assets/internship-altruisty.jpg";
-const hackathonIdeathon = "/seed-assets/hackathon-ideathon.jpg";
-const hackathonInfosys = "/seed-assets/hackathon-infosys.jpg";
-const hackathonXyntra = "/seed-assets/hackathon-xyntra.jpg";
-const certNasscom = "/seed-assets/cert-nasscom.jpg";
-const certAws = "/seed-assets/cert-aws.jpg";
-const certNptel = "/seed-assets/cert-nptel.jpg";
-const certOracle = "/seed-assets/cert-oracle.jpg";
-
-export function getDefaultData(): Database {
+function getDefaultData(): Database {
   return {
     projects: [
       { id: "p1", title: "Start or Scrap? – Startup Validation Game", description: "An interactive startup idea-validation game that simulates real-world decision-making under time pressure. Users evaluate randomly generated startup ideas using structured validation questions.", tech: ["Python", "Django", "React", "MySQL"], image: projectStartup, projectUrl: "https://github.com/saisumanth-g", github: "https://github.com/saisumanth-g" },

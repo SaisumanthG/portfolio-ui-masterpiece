@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { FolderOpen, ExternalLink, Github, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
@@ -18,7 +18,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const loadProjects = () => setProjects(getAllRecords("projects"));
-    fetchRecords("projects").then(setProjects).catch(() => setProjects([]));
+    loadProjects();
     return subscribeToDatabaseChanges(loadProjects);
   }, []);
 
@@ -55,7 +55,7 @@ export default function ProjectsPage() {
 
             <div className="w-full rounded-lg overflow-hidden mb-3 border border-border/20" style={{ height: customization.cardHeight || 192 }}>
               {project.image ? (
-                <img src={project.image} alt={project.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
               ) : (
                 <div className="w-full h-full image-placeholder flex items-center justify-center">
                   <Code2 className="w-10 h-10 text-muted-foreground/30" />

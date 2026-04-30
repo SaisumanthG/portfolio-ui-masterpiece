@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Github } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 const cardVariant = {
@@ -18,7 +18,7 @@ export default function HackathonsPage() {
 
   useEffect(() => {
     const loadHackathons = () => setHackathons(getAllRecords("hackathons"));
-    fetchRecords("hackathons").then(setHackathons).catch(() => setHackathons([]));
+    loadHackathons();
     return subscribeToDatabaseChanges(loadHackathons);
   }, []);
 
@@ -48,7 +48,7 @@ export default function HackathonsPage() {
             <div className="glass-card p-0 overflow-hidden hover-glass flex flex-col h-full">
               <div className="relative w-full overflow-hidden" style={{ height: customization.cardHeight || 192 }}>
                 {h.image ? (
-                  <img src={h.image} alt={h.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <img src={h.image} alt={h.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
                   <div className="w-full h-full image-placeholder flex items-center justify-center">
                     <Trophy className="w-12 h-12 text-primary/30" />

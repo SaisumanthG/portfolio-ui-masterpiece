@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Building2, Globe, ExternalLink, Github } from "lucide-react";
 import { useState, useEffect } from "react";
-import { fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { useCustomization } from "@/hooks/use-customization";
 
 export default function InternshipsPage() {
@@ -11,10 +11,7 @@ export default function InternshipsPage() {
 
   useEffect(() => {
     const loadInternships = () => setInternships(getAllRecords("internships"));
-    fetchRecords("internships").then((rows) => {
-      setInternships(rows);
-      setActiveIndex(0);
-    }).catch(() => setInternships([]));
+    loadInternships();
     return subscribeToDatabaseChanges(loadInternships);
   }, []);
 
@@ -75,7 +72,6 @@ export default function InternshipsPage() {
                   <img
                     src={current.image}
                     alt={current.company}
-                    loading="lazy"
                     className="w-full h-full object-cover bg-secondary/30"
                     style={current.imageNudge ? { objectPosition: `${50 + Number((current.imageNudge as string).split(",")[0])}% ${50 + Number((current.imageNudge as string).split(",")[1])}%` } : undefined}
                   />

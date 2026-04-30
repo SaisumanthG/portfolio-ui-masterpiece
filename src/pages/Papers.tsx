@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Download, Share2, ExternalLink, Eye, X, ImageIcon, Mail } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { addDownloadStat, fetchRecords, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
+import { addDownloadStat, getAllRecords, subscribeToDatabaseChanges, type DBRecord } from "@/lib/database";
 import { toast } from "sonner";
 import { useCustomization } from "@/hooks/use-customization";
 import ShareFallbackDialog from "@/components/ShareFallbackDialog";
@@ -31,7 +31,7 @@ export default function PapersPage() {
 
   useEffect(() => {
     const loadPapers = () => setPapers(getAllRecords("papers"));
-    fetchRecords("papers").then(setPapers).catch(() => setPapers([]));
+    loadPapers();
     return subscribeToDatabaseChanges(loadPapers);
   }, []);
 
@@ -182,7 +182,6 @@ export default function PapersPage() {
                 <img
                   src={getDisplayImage(paper)}
                   alt={paper.title as string}
-                  loading="lazy"
                   className="w-full h-full rounded-lg object-contain shadow-sm"
                   style={getImageStyle(paper)}
                 />

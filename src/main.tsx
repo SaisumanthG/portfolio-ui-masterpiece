@@ -2,16 +2,28 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { applyLayoutTemplate, applyThemeColors, applyThemeFont, applyThemeRadius, loadFontIfNeeded } from "@/lib/theme";
-import { getAppearance } from "@/lib/database";
 
-getAppearance().then((appearance) => {
-  if (appearance.colors) applyThemeColors(appearance.colors);
-  if (appearance.font) {
-    loadFontIfNeeded(appearance.font);
-    applyThemeFont(appearance.font);
+// Restore saved appearance
+try {
+  const savedColors = localStorage.getItem("portfolio_theme");
+  if (savedColors) {
+    const colors = JSON.parse(savedColors);
+    applyThemeColors(colors);
   }
-  if (appearance.radius) applyThemeRadius(appearance.radius);
-  applyLayoutTemplate(appearance.template || "default");
-}).catch(() => applyLayoutTemplate("default"));
+
+  const savedFont = localStorage.getItem("portfolio_font");
+  if (savedFont) {
+    loadFontIfNeeded(savedFont);
+    applyThemeFont(savedFont);
+  }
+
+  const savedRadius = localStorage.getItem("portfolio_theme_radius");
+  if (savedRadius) {
+    applyThemeRadius(savedRadius);
+  }
+
+  const savedTemplate = localStorage.getItem("portfolio_layout_template") || "default";
+  applyLayoutTemplate(savedTemplate);
+} catch {}
 
 createRoot(document.getElementById("root")!).render(<App />);
