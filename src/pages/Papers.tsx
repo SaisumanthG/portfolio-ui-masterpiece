@@ -140,14 +140,17 @@ export default function PapersPage() {
     window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
   };
 
-  const getImageStyle = (paper: DBRecord) => {
+  const getImageStyle = (paper: DBRecord): React.CSSProperties | undefined => {
     const nudge = paper.previewImageNudge || paper.imageNudge;
     if (!nudge) return undefined;
     const parts = (nudge as string).split(",").map(Number);
-    return {
+    const z = parts[2] && parts[2] > 0 ? parts[2] : 1;
+    const style: React.CSSProperties = {
       objectPosition: `${50 + (parts[0] || 0)}% ${50 + (parts[1] || 0)}%`,
-      transform: `scale(${parts[2] || 1})`,
+      transformOrigin: "center center",
     };
+    if (z !== 1) style.transform = `scale(${z})`;
+    return style;
   };
 
   const getDisplayImage = (paper: DBRecord) => (paper.previewImage || paper.image) as string;

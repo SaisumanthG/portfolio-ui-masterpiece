@@ -30,14 +30,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return subscribeToDatabaseChanges(loadLogo);
   }, []);
 
-  const getNudgeStyle = (nudge: string) => {
+  const getNudgeStyle = (nudge: string): React.CSSProperties | undefined => {
     if (!nudge) return undefined;
     const [x, y, zoom] = nudge.split(",").map(Number);
-    return {
+    const z = zoom && zoom > 0 ? zoom : 1;
+    const style: React.CSSProperties = {
       objectPosition: `${50 + (x || 0)}% ${50 + (y || 0)}%`,
-      transform: `scale(${zoom || 1})`,
-      transformOrigin: `${50 + (x || 0)}% ${50 + (y || 0)}%`,
+      transformOrigin: "center center",
     };
+    if (z !== 1) style.transform = `scale(${z})`;
+    return style;
   };
 
   return (
